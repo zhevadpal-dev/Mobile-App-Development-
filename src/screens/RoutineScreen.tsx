@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS } from '../constants/theme';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootTabParamList } from '../types/navigation';
 
 interface RoutineStep {
   id: string;
@@ -37,6 +39,7 @@ const SAMPLE_PM_STEPS: RoutineStep[] = [
 
 export default function RoutineScreen() {
   const { colors, isDark } = useTheme();
+  const navigation = useNavigation<NavigationProp<RootTabParamList>>();
   const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>('AM');
   const [amSteps, setAmSteps] = useState<RoutineStep[]>(SAMPLE_AM_STEPS);
   const [pmSteps, setPmSteps] = useState<RoutineStep[]>(SAMPLE_PM_STEPS);
@@ -52,6 +55,12 @@ export default function RoutineScreen() {
 
   const completedCount = steps.filter(s => s.completed).length;
   const progressPercent = Math.round((completedCount / steps.length) * 100);
+
+  const handleCompleteRoutine = () => {
+    if (completedCount === steps.length) {
+      navigation.navigate('Diary');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -250,6 +259,8 @@ export default function RoutineScreen() {
                   : isDark ? '#282623' : '#E5DFD7',
             },
           ]}
+          onPress={handleCompleteRoutine}
+          disabled={completedCount !== steps.length}
           activeOpacity={0.85}
         >
           <Text

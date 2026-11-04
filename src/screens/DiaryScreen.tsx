@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,199 +6,404 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS } from '../constants/theme';
+import {
+  SkinConditionType,
+  SKIN_CONDITIONS,
+  DiaryLogEntry,
+  SkinConditionOption,
+} from '../types/diary';
+import {
+  getDiaryLogs,
+  addDiaryLog,
+  deleteDiaryLog,
+} from '../services/diaryStorage';
 
-const EMOJI_OPTIONS = [
-  { emoji: '✨', label: 'Glowing' },
-  { emoji: '💧', label: 'Hydrated' },
-  { emoji: '⚖️', label: 'Balanced' },
-  { emoji: '🌵', label: 'Dry' },
-  { emoji: '🍓', label: 'Sensitive' },
-  { emoji: '⚡', label: 'Breakouts' },
-];
+/**
+ * Format log date for elegant display
+ */
+const formatLogDisplayDate = (dateStr: string): string => {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
 
-const WEEK_DAYS = [
-  { day: 'Mon', date: '12', am: true, pm: true },
-  { day: 'Tue', date: '13', am: true, pm: true },
-  { day: 'Wed', date: '14', am: true, pm: false },
-  { day: 'Thu', date: '15', am: false, pm: false },
-  { day: 'Fri', date: '16', am: false, pm: false },
-  { day: 'Sat', date: '17', am: false, pm: false },
-  { day: 'Sun', date: '18', am: false, pm: false },
-];
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(
+    2,
+    '0'
+  )}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+  if (dateStr === todayStr) {
+    return 'Today';
+  }
+  if (dateStr === yesterdayStr) {
+    return 'Yesterday';
+  }
+
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      const monthIndex = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const year = parts[0];
+      if (monthIndex >= 0 && monthIndex < 12 && !isNaN(day)) {
+        return `${monthNames[monthIndex]} ${day}, ${year}`;
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return dateStr;
+};
+
+/**
+ * Get current date string in YYYY-MM-DD
+ */
+const getCurrentDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function DiaryScreen() {
   const { colors, isDark } = useTheme();
-  const [selectedEmoji, setSelectedEmoji] = useState('✨');
+
+  // Selected skin state (default to Hydrated)
+  const [selectedConditionKey, setSelectedConditionKey] = useState<SkinConditionType>('hydrated');
+  const [note, setNote] = useState<string>('');
+  const [logs, setLogs] = useState<DiaryLogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Active condition details
+  const activeCondition: SkinConditionOption =
+    SKIN_CONDITIONS.find(c => c.key === selectedConditionKey) || SKIN_CONDITIONS[0];
+
+  /**
+   * Load history from AsyncStorage
+   */
+  const loadLogs = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await getDiaryLogs();
+      setLogs(data);
+    } catch (error) {
+      console.error('Failed to load diary logs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  /**
+   * Save Today's Skin Log
+   */
+  const handleSaveLog = async () => {
+    try {
+      setIsSaving(true);
+      const date = getCurrentDateString();
+
+      await addDiaryLog({
+        date,
+        condition: activeCondition.key,
+        emoji: activeCondition.emoji,
+        label: activeCondition.label,
+        tipTitle: activeCondition.tipTitle,
+        tipDescription: activeCondition.tipDescription,
+        note: note.trim() || undefined,
+      });
+
+      setNote('');
+      await loadLogs();
+      Alert.alert('Skin Logged ✨', `Recorded as ${activeCondition.label} for ${formatLogDisplayDate(date)}.`);
+    } catch (error) {
+      console.error('Error saving skin log:', error);
+      Alert.alert('Save Error', 'Could not save your log. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
+   * Delete Log Entry
+   */
+  const handleDeleteLog = (id: string, label: string, date: string) => {
+    Alert.alert(
+      'Remove Entry',
+      `Delete ${label} entry from ${formatLogDisplayDate(date)}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDiaryLog(id);
+              await loadLogs();
+            } catch (error) {
+              console.error('Delete error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: colors.accent }]}>INSIGHTS & TRACKING</Text>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Skin Diary</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Monitor your skin's daily evolution and consistency.
-          </Text>
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Skin Diary</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Log how your skin feels today to receive actionable care tips.
+            </Text>
+          </View>
 
-        {/* Streak & Consistency Card */}
-        <View
-          style={[
-            styles.streakCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.cardBorder,
-            },
-          ]}
-        >
-          <View style={styles.streakLeft}>
-            <Text style={styles.streakEmoji}>🔥</Text>
-            <View>
-              <Text style={[styles.streakNumber, { color: colors.textPrimary }]}>5 Days</Text>
-              <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>
-                Current Daily Streak
+          {/* Skin Condition Selector */}
+          <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
+            How does your skin feel today?
+          </Text>
+
+          <View style={styles.emojiGrid}>
+            {SKIN_CONDITIONS.map(item => {
+              const isSelected = selectedConditionKey === item.key;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.emojiCard,
+                    {
+                      backgroundColor: isSelected
+                        ? isDark ? '#38251E' : colors.primaryLight
+                        : colors.card,
+                      borderColor: isSelected
+                        ? colors.primary
+                        : colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setSelectedConditionKey(item.key)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.emojiChar}>{item.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.emojiLabel,
+                      {
+                        color: isSelected ? colors.primary : colors.textPrimary,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Dynamic Smart Tip Card */}
+          <View
+            style={[
+              styles.tipCard,
+              {
+                backgroundColor: isDark ? '#1C1B19' : colors.card,
+                borderColor: isDark ? '#3D2F28' : '#F0E5DF',
+              },
+            ]}
+          >
+            <View style={styles.tipHeaderRow}>
+              <View
+                style={[
+                  styles.tipBadge,
+                  { backgroundColor: isDark ? '#38251E' : colors.primaryLight },
+                ]}
+              >
+                <Text style={[styles.tipBadgeText, { color: colors.primary }]}>
+                  💡 Smart Skincare Tip
+                </Text>
+              </View>
+              <Text style={styles.tipConditionEmoji}>{activeCondition.emoji}</Text>
+            </View>
+
+            <Text style={[styles.tipTitle, { color: colors.textPrimary }]}>
+              {activeCondition.tipTitle}
+            </Text>
+
+            <Text style={[styles.tipDescription, { color: colors.textSecondary }]}>
+              {activeCondition.tipDescription}
+            </Text>
+
+            <View
+              style={[
+                styles.actionBadgeRow,
+                {
+                  backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                  borderColor: isDark ? '#3A3631' : '#EAE4DC',
+                },
+              ]}
+            >
+              <Text style={[styles.actionBadgeText, { color: colors.secondary }]}>
+                ✓ Suggestion: {activeCondition.recommendedAction}
               </Text>
             </View>
           </View>
-          <View
-            style={[
-              styles.streakBadge,
-              { backgroundColor: isDark ? '#382D20' : '#F7EFE4' },
-            ]}
-          >
-            <Text style={[styles.streakBadgeText, { color: colors.accent }]}>Best: 14</Text>
-          </View>
-        </View>
 
-        {/* Weekly Consistency Strip */}
-        <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-          Weekly Routine Consistency
-        </Text>
-        <View style={styles.calendarStrip}>
-          {WEEK_DAYS.map(item => {
-            const isToday = item.date === '14';
-            return (
-              <View
-                key={item.day}
-                style={[
-                  styles.dayCard,
-                  {
-                    backgroundColor: isToday
-                      ? isDark ? '#3D251E' : colors.primaryLight
-                      : colors.card,
-                    borderColor: isToday ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-              >
-                <Text
+          {/* Quick Note Input */}
+          <View style={styles.noteInputContainer}>
+            <TextInput
+              style={[
+                styles.noteInput,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
+                  color: colors.textPrimary,
+                },
+              ]}
+              placeholder="Optional note (e.g. new moisturizer, sun exposure)..."
+              placeholderTextColor={colors.textMuted}
+              value={note}
+              onChangeText={setNote}
+              maxLength={120}
+            />
+
+            {/* Save Log Button */}
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveLog}
+              disabled={isSaving}
+              activeOpacity={0.85}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Today's Log</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* History Section */}
+          <View style={styles.historyHeaderRow}>
+            <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginBottom: 0 }]}>
+              History Log
+            </Text>
+            <Text style={[styles.historyCount, { color: colors.textSecondary }]}>
+              {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+            </Text>
+          </View>
+
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : logs.length === 0 ? (
+            <View
+              style={[
+                styles.emptyHistoryCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
+              <Text style={styles.emptyHistoryIcon}>📝</Text>
+              <Text style={[styles.emptyHistoryTitle, { color: colors.textPrimary }]}>
+                No Skin Logs Yet
+              </Text>
+              <Text style={[styles.emptyHistorySubtitle, { color: colors.textSecondary }]}>
+                Log how your skin feels to begin tracking your skin changes over time.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.historyList}>
+              {logs.map(entry => (
+                <View
+                  key={entry.id}
                   style={[
-                    styles.dayText,
-                    { color: isToday ? colors.primary : colors.textMuted },
+                    styles.historyItemCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.cardBorder,
+                    },
                   ]}
                 >
-                  {item.day}
-                </Text>
-                <Text
-                  style={[
-                    styles.dateText,
-                    { color: isToday ? colors.primary : colors.textPrimary },
-                  ]}
-                >
-                  {item.date}
-                </Text>
-                <View style={styles.badgeRow}>
+                  <View style={styles.historyTopRow}>
+                    <View style={styles.historyConditionGroup}>
+                      <Text style={styles.historyEmoji}>{entry.emoji}</Text>
+                      <View>
+                        <Text style={[styles.historyLabel, { color: colors.textPrimary }]}>
+                          {entry.label}
+                        </Text>
+                        <Text style={[styles.historyDate, { color: colors.textMuted }]}>
+                          {formatLogDisplayDate(entry.date)} {entry.time ? `• ${entry.time}` : ''}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => handleDeleteLog(entry.id, entry.label, entry.date)}
+                      style={styles.deleteButton}
+                      activeOpacity={0.6}
+                      accessibilityLabel="Delete entry"
+                    >
+                      <Text style={[styles.deleteButtonText, { color: colors.textMuted }]}>
+                        ✕
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Saved Tip Summary */}
                   <View
                     style={[
-                      styles.dot,
+                      styles.historyTipBox,
                       {
-                        backgroundColor: item.am
-                          ? colors.secondary
-                          : isDark ? '#3A3733' : '#E5E0D8',
+                        backgroundColor: isDark ? '#23211F' : '#FAF8F5',
+                        borderColor: isDark ? '#33302B' : '#EFEAE3',
                       },
                     ]}
-                  />
-                  <View
-                    style={[
-                      styles.dot,
-                      {
-                        backgroundColor: item.pm
-                          ? colors.secondary
-                          : isDark ? '#3A3733' : '#E5E0D8',
-                      },
-                    ]}
-                  />
+                  >
+                    <Text style={[styles.historyTipTitle, { color: colors.primary }]}>
+                      💡 {entry.tipTitle}
+                    </Text>
+                    <Text style={[styles.historyTipText, { color: colors.textSecondary }]}>
+                      {entry.tipDescription}
+                    </Text>
+                  </View>
+
+                  {/* Optional user note */}
+                  {entry.note ? (
+                    <Text style={[styles.historyUserNote, { color: colors.textPrimary }]}>
+                      "{entry.note}"
+                    </Text>
+                  ) : null}
                 </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Today's Skin Feeling (Emoji Log) */}
-        <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-          How does your skin feel today?
-        </Text>
-        <View style={styles.emojiGrid}>
-          {EMOJI_OPTIONS.map(opt => {
-            const isSelected = selectedEmoji === opt.emoji;
-            return (
-              <TouchableOpacity
-                key={opt.label}
-                style={[
-                  styles.emojiItem,
-                  {
-                    backgroundColor: isSelected
-                      ? isDark ? '#3D251E' : colors.primaryLight
-                      : colors.card,
-                    borderColor: isSelected ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => setSelectedEmoji(opt.emoji)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.emojiChar}>{opt.emoji}</Text>
-                <Text
-                  style={[
-                    styles.emojiLabel,
-                    { color: isSelected ? colors.primary : colors.textSecondary },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Recent Notes Preview */}
-        <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-          Recent Notes
-        </Text>
-        <View
-          style={[
-            styles.logCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.cardBorder,
-            },
-          ]}
-        >
-          <View style={styles.logHeader}>
-            <Text style={[styles.logDate, { color: colors.textSecondary }]}>
-              Yesterday • Evening Log
-            </Text>
-            <Text style={[styles.logEmoji, { color: colors.textPrimary }]}>
-              💧 Hydrated
-            </Text>
-          </View>
-          <Text style={[styles.logNote, { color: colors.textPrimary }]}>
-            Skin barrier feels soothed after applying the ceramide barrier cream. No redness or sensitivity detected.
-          </Text>
-        </View>
-      </ScrollView>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -210,17 +415,10 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.xl,
+    paddingBottom: SPACING.xl * 1.5,
   },
   header: {
     marginBottom: SPACING.md,
-  },
-  eyebrow: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginBottom: 4,
   },
   title: {
     fontSize: 28,
@@ -228,90 +426,26 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
-  },
-  streakCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    borderWidth: 1,
-    marginVertical: SPACING.md,
-  },
-  streakLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  streakEmoji: {
-    fontSize: 28,
-  },
-  streakNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  streakLabel: {
-    fontSize: 12,
-  },
-  streakBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: RADIUS.full,
-  },
-  streakBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    lineHeight: 18,
   },
   sectionHeading: {
     fontSize: 15,
     fontWeight: '700',
-    marginTop: SPACING.md,
     marginBottom: SPACING.sm,
   },
-  calendarStrip: {
+  emojiGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: SPACING.md,
   },
-  dayCard: {
+  emojiCard: {
     flex: 1,
+    marginHorizontal: 3,
+    paddingVertical: 12,
     alignItems: 'center',
-    paddingVertical: 10,
-    marginHorizontal: 2,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-  },
-  dayText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  dateText: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginVertical: 4,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 3,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  emojiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: SPACING.md,
-  },
-  emojiItem: {
-    width: '31%',
-    borderRadius: RADIUS.md,
-    paddingVertical: 14,
-    alignItems: 'center',
     borderWidth: 1,
   },
   emojiChar: {
@@ -320,29 +454,172 @@ const styles = StyleSheet.create({
   },
   emojiLabel: {
     fontSize: 11,
+  },
+  tipCard: {
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+  },
+  tipHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tipBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+  },
+  tipBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  tipConditionEmoji: {
+    fontSize: 20,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  tipDescription: {
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  actionBadgeRow: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  actionBadgeText: {
+    fontSize: 11,
     fontWeight: '600',
   },
-  logCard: {
+  noteInputContainer: {
+    marginBottom: SPACING.lg,
+  },
+  noteInput: {
+    height: 44,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    fontSize: 13,
+    marginBottom: 10,
+  },
+  saveButton: {
+    height: 46,
+    borderRadius: RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#C86D56',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  historyHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  historyCount: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    paddingVertical: 30,
+    alignItems: 'center',
+  },
+  emptyHistoryCard: {
+    borderRadius: RADIUS.md,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  emptyHistoryIcon: {
+    fontSize: 32,
+    marginBottom: 6,
+  },
+  emptyHistoryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  emptyHistorySubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    maxWidth: 240,
+  },
+  historyList: {
+    gap: 10,
+  },
+  historyItemCard: {
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     borderWidth: 1,
   },
-  logHeader: {
+  historyTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  logDate: {
-    fontSize: 12,
-    fontWeight: '600',
+  historyConditionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  logEmoji: {
-    fontSize: 12,
+  historyEmoji: {
+    fontSize: 26,
+  },
+  historyLabel: {
+    fontSize: 15,
     fontWeight: '700',
   },
-  logNote: {
-    fontSize: 13,
-    lineHeight: 18,
+  historyDate: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  deleteButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  historyTipBox: {
+    padding: 10,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  historyTipTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  historyTipText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  historyUserNote: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+    lineHeight: 16,
   },
 });
