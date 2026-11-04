@@ -7,7 +7,8 @@ import {
   ScrollView,
   SafeAreaView,
 } from 'react-native';
-import { COLORS, SPACING, RADIUS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS } from '../constants/theme';
 
 interface RoutineStep {
   id: string;
@@ -35,6 +36,7 @@ const SAMPLE_PM_STEPS: RoutineStep[] = [
 ];
 
 export default function RoutineScreen() {
+  const { colors, isDark } = useTheme();
   const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>('AM');
   const [amSteps, setAmSteps] = useState<RoutineStep[]>(SAMPLE_AM_STEPS);
   const [pmSteps, setPmSteps] = useState<RoutineStep[]>(SAMPLE_PM_STEPS);
@@ -52,23 +54,31 @@ export default function RoutineScreen() {
   const progressPercent = Math.round((completedCount / steps.length) * 100);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>DAILY RITUAL</Text>
-          <Text style={styles.title}>Skincare Routine</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.eyebrow, { color: colors.primary }]}>DAILY RITUAL</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Skincare Routine</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Sorted thinnest to thickest for optimal absorption.
           </Text>
         </View>
 
         {/* AM / PM Routine Toggle */}
-        <View style={styles.segmentedControl}>
+        <View
+          style={[
+            styles.segmentedControl,
+            { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
+          ]}
+        >
           <TouchableOpacity
             style={[
               styles.segmentButton,
-              activeRoutine === 'AM' && styles.segmentButtonActive,
+              activeRoutine === 'AM' && [
+                styles.segmentButtonActive,
+                { backgroundColor: colors.card },
+              ],
             ]}
             onPress={() => setActiveRoutine('AM')}
             activeOpacity={0.8}
@@ -76,7 +86,13 @@ export default function RoutineScreen() {
             <Text
               style={[
                 styles.segmentText,
-                activeRoutine === 'AM' && styles.segmentTextActive,
+                {
+                  color:
+                    activeRoutine === 'AM'
+                      ? colors.textPrimary
+                      : colors.textSecondary,
+                  fontWeight: activeRoutine === 'AM' ? '700' : '600',
+                },
               ]}
             >
               ☀️ Morning Routine
@@ -86,7 +102,10 @@ export default function RoutineScreen() {
           <TouchableOpacity
             style={[
               styles.segmentButton,
-              activeRoutine === 'PM' && styles.segmentButtonActive,
+              activeRoutine === 'PM' && [
+                styles.segmentButtonActive,
+                { backgroundColor: colors.card },
+              ],
             ]}
             onPress={() => setActiveRoutine('PM')}
             activeOpacity={0.8}
@@ -94,7 +113,13 @@ export default function RoutineScreen() {
             <Text
               style={[
                 styles.segmentText,
-                activeRoutine === 'PM' && styles.segmentTextActive,
+                {
+                  color:
+                    activeRoutine === 'PM'
+                      ? colors.textPrimary
+                      : colors.textSecondary,
+                  fontWeight: activeRoutine === 'PM' ? '700' : '600',
+                },
               ]}
             >
               🌙 Evening Routine
@@ -103,32 +128,70 @@ export default function RoutineScreen() {
         </View>
 
         {/* Progress Card */}
-        <View style={styles.progressCard}>
+        <View
+          style={[
+            styles.progressCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.cardBorder,
+            },
+          ]}
+        >
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
               {completedCount} of {steps.length} steps completed
             </Text>
-            <Text style={styles.progressPercent}>{progressPercent}%</Text>
+            <Text style={[styles.progressPercent, { color: colors.primary }]}>
+              {progressPercent}%
+            </Text>
           </View>
-          <View style={styles.progressBarTrack}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+          <View
+            style={[
+              styles.progressBarTrack,
+              { backgroundColor: isDark ? '#2E2B27' : '#F0ECE6' },
+            ]}
+          >
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${progressPercent}%`, backgroundColor: colors.primary },
+              ]}
+            />
           </View>
         </View>
 
         {/* Step-by-Step Checklist */}
-        <Text style={styles.sectionHeading}>Steps in Application Order</Text>
+        <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
+          Steps in Application Order
+        </Text>
         <View style={styles.stepsList}>
           {steps.map(step => (
             <TouchableOpacity
               key={step.id}
-              style={[styles.stepItem, step.completed && styles.stepItemCompleted]}
+              style={[
+                styles.stepItem,
+                {
+                  backgroundColor: step.completed
+                    ? isDark ? '#1C1B19' : '#F9F7F4'
+                    : colors.card,
+                  borderColor: step.completed
+                    ? isDark ? '#2A2825' : '#EAE6E1'
+                    : colors.cardBorder,
+                  opacity: step.completed ? 0.8 : 1,
+                },
+              ]}
               onPress={() => toggleStep(step.id)}
               activeOpacity={0.7}
             >
               <View
                 style={[
                   styles.checkbox,
-                  step.completed && styles.checkboxCompleted,
+                  {
+                    borderColor: step.completed
+                      ? colors.primary
+                      : isDark ? '#48443F' : '#D4CFC9',
+                    backgroundColor: step.completed ? colors.primary : 'transparent',
+                  },
                 ]}
               >
                 {step.completed && <Text style={styles.checkmark}>✓</Text>}
@@ -136,8 +199,20 @@ export default function RoutineScreen() {
 
               <View style={styles.stepInfo}>
                 <View style={styles.stepBadgeRow}>
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>
+                  <View
+                    style={[
+                      styles.categoryBadge,
+                      {
+                        backgroundColor: isDark ? '#3D251E' : colors.primaryLight,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryBadgeText,
+                        { color: colors.primary },
+                      ]}
+                    >
                       Step {step.order} • {step.category}
                     </Text>
                   </View>
@@ -145,12 +220,24 @@ export default function RoutineScreen() {
                 <Text
                   style={[
                     styles.stepName,
-                    step.completed && styles.stepNameCompleted,
+                    {
+                      color: step.completed
+                        ? colors.textMuted
+                        : colors.textPrimary,
+                      textDecorationLine: step.completed ? 'line-through' : 'none',
+                    },
                   ]}
                 >
                   {step.name}
                 </Text>
-                <Text style={styles.stepBrand}>{step.brand}</Text>
+                <Text
+                  style={[
+                    styles.stepBrand,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {step.brand}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -160,11 +247,26 @@ export default function RoutineScreen() {
         <TouchableOpacity
           style={[
             styles.completeButton,
-            completedCount === steps.length && styles.completeButtonActive,
+            {
+              backgroundColor:
+                completedCount === steps.length
+                  ? colors.primary
+                  : isDark ? '#282623' : '#E5DFD7',
+            },
           ]}
           activeOpacity={0.85}
         >
-          <Text style={styles.completeButtonText}>
+          <Text
+            style={[
+              styles.completeButtonText,
+              {
+                color:
+                  completedCount === steps.length
+                    ? '#FFFFFF'
+                    : isDark ? '#7A7571' : '#8A857F',
+              },
+            ]}
+          >
             {completedCount === steps.length
               ? '✨ Routine Completed! Log Skin'
               : 'Complete All Steps to Log'}
@@ -178,7 +280,6 @@ export default function RoutineScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   container: {
     paddingHorizontal: SPACING.lg,
@@ -192,24 +293,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
-    color: COLORS.primary,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: COLORS.textPrimary,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     marginTop: 4,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#EFECE6',
     borderRadius: RADIUS.full,
     padding: 4,
     marginVertical: SPACING.md,
@@ -221,27 +318,19 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
   },
   segmentButtonActive: {
-    backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.12,
     shadowRadius: 2,
     elevation: 2,
   },
   segmentText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  segmentTextActive: {
-    color: COLORS.textPrimary,
   },
   progressCard: {
-    backgroundColor: COLORS.card,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     marginBottom: SPACING.lg,
   },
   progressHeader: {
@@ -253,28 +342,23 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
   },
   progressPercent: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.primary,
   },
   progressBarTrack: {
     height: 6,
-    backgroundColor: '#F0ECE6',
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: COLORS.primary,
     borderRadius: 3,
   },
   sectionHeading: {
     fontSize: 15,
     fontWeight: '700',
-    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   stepsList: {
@@ -284,30 +368,18 @@ const styles = StyleSheet.create({
   stepItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  stepItemCompleted: {
-    backgroundColor: '#F9F7F4',
-    borderColor: '#EAE6E1',
-    opacity: 0.75,
   },
   checkbox: {
     width: 26,
     height: 26,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: '#D4CFC9',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
-  },
-  checkboxCompleted: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   checkmark: {
     color: '#FFFFFF',
@@ -322,7 +394,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   categoryBadge: {
-    backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: RADIUS.full,
@@ -330,34 +401,22 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.primary,
   },
   stepName: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  stepNameCompleted: {
-    textDecorationLine: 'line-through',
-    color: COLORS.textMuted,
   },
   stepBrand: {
     fontSize: 12,
-    color: COLORS.textSecondary,
     marginTop: 1,
   },
   completeButton: {
-    backgroundColor: '#E5DFD7',
     paddingVertical: 14,
     borderRadius: RADIUS.md,
     alignItems: 'center',
   },
-  completeButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
   completeButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
 });
