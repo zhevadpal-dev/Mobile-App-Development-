@@ -8,3 +8,8 @@ export type AuthStackParamList = {
   Login: undefined;
   SignUp: undefined;
 };
+
+export type MainStackParamList = {
+  MainTabs: undefined;
+  Settings: undefined;
+};

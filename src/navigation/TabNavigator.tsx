@@ -1,13 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import RoutineScreen from '../screens/RoutineScreen';
 import CabinetScreen from '../screens/CabinetScreen';
 import DiaryScreen from '../screens/DiaryScreen';
-import { RootTabParamList } from '../types/navigation';
+import { RootTabParamList, MainStackParamList } from '../types/navigation';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from '../components/ThemeToggle';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -31,22 +31,12 @@ const TabIcon = ({ focused, icon }: TabIconProps) => {
 };
 
 export default function TabNavigator() {
+  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const { colors, isDark } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const handleAccountPress = () => {
-    Alert.alert(
-      user?.name || 'My Account',
-      `Signed in as ${user?.email || 'User'}\n\nWould you like to sign out?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ]
-    );
+  const handleOpenSettings = () => {
+    navigation.navigate('Settings');
   };
 
   const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
@@ -69,23 +59,24 @@ export default function TabNavigator() {
           </Text>
         ),
         headerRight: () => (
-          <View style={styles.headerRightGroup}>
-            <ThemeToggle />
-            <TouchableOpacity
-              onPress={handleAccountPress}
-              style={[
-                styles.avatarButton,
-                {
-                  backgroundColor: isDark ? '#3A231C' : '#FBECE8',
-                  borderColor: colors.primary,
-                },
-              ]}
-              activeOpacity={0.7}
-              accessibilityLabel="Account and Sign Out"
-            >
+          <TouchableOpacity
+            onPress={handleOpenSettings}
+            style={[
+              styles.avatarButton,
+              {
+                backgroundColor: isDark ? '#3A231C' : '#FBECE8',
+                borderColor: colors.primary,
+              },
+            ]}
+            activeOpacity={0.7}
+            accessibilityLabel="Open settings and profile"
+          >
+            {user?.photoUri ? (
+              <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
+            ) : (
               <Text style={[styles.avatarText, { color: colors.primary }]}>{userInitial}</Text>
-            </TouchableOpacity>
-          </View>
+            )}
+          </TouchableOpacity>
         ),
         headerRightContainerStyle: {
           paddingRight: 16,
@@ -161,21 +152,21 @@ const styles = StyleSheet.create({
   iconTextActive: {
     opacity: 1,
   },
-  headerRightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   avatarButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

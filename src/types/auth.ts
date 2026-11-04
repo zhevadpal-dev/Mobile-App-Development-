@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   createdAt: number;
+  photoUri?: string;
 }
 
 export interface StoredUserAccount extends User {

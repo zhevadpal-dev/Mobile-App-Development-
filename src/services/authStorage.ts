@@ -188,3 +188,48 @@ export const logoutUser = async (): Promise<void> => {
     console.error('Error logging out from AsyncStorage:', error);
   }
 };
+
+/**
+ * Update current user profile (name and/or photoUri)
+ */
+export const updateStoredUserProfile = async (updates: {
+  name?: string;
+  photoUri?: string | null;
+}): Promise<User> => {
+  const currentSession = await getStoredSession();
+  if (!currentSession) {
+    throw new Error('No active user session found.');
+  }
+
+  const updatedUser: User = {
+    ...currentSession.user,
+    ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+    ...(updates.photoUri !== undefined
+      ? { photoUri: updates.photoUri || undefined }
+      : {}),
+  };
+
+  // Update active session in AsyncStorage
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser));
+
+  // Also update in registered mock accounts
+  try {
+    const accounts = await getMockAccounts();
+    const updatedAccounts = accounts.map(acc => {
+      if (acc.id === updatedUser.id) {
+        return {
+          ...acc,
+          name: updatedUser.name,
+          photoUri: updatedUser.photoUri,
+        };
+      }
+      return acc;
+    });
+    await saveMockAccounts(updatedAccounts);
+  } catch (error) {
+    console.error('Error updating mock accounts list:', error);
+  }
+
+  return updatedUser;
+};
+

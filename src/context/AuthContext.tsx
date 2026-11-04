@@ -5,6 +5,7 @@ import {
   loginUser,
   signUpUser,
   logoutUser,
+  updateStoredUserProfile,
 } from '../services/authStorage';
 
 interface AuthContextType {
@@ -15,6 +16,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   signUp: (credentials: SignUpCredentials) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (updates: { name?: string; photoUri?: string | null }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +63,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   }, []);
 
+  const updateProfile = useCallback(
+    async (updates: { name?: string; photoUri?: string | null }) => {
+      const updatedUser = await updateStoredUserProfile(updates);
+      setUser(updatedUser);
+    },
+    []
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -71,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signUp,
         logout,
+        updateProfile,
       }}
     >
       {children}
