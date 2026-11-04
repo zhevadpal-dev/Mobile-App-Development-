@@ -69,155 +69,160 @@ export default function LoginScreen({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Top Bar with Theme Toggle */}
-          <View style={styles.topBar}>
-            <View style={styles.topBarSpacer} />
-            <ThemeToggle />
-          </View>
-
-          {/* Hero Branding */}
-          <View style={styles.heroSection}>
-            <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>Skin Diary</Text>
-            <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-              Sign in to your mindful skincare ritual
-            </Text>
-          </View>
-
-          {/* Error Banner */}
-          {errorMessage ? (
-            <View
-              style={[
-                styles.errorBanner,
-                {
-                  backgroundColor: isDark ? '#38221D' : '#FBECE8',
-                  borderColor: colors.primary,
-                },
-              ]}
-            >
-              <Text style={[styles.errorText, { color: colors.primary }]}>{errorMessage}</Text>
-            </View>
-          ) : null}
-
-          {/* Inputs Section */}
-          <View style={styles.formContainer}>
-            {/* Email Field */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>EMAIL</Text>
-              <TextInput
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor:
-                      focusedField === 'email' ? colors.primary : colors.cardBorder,
-                    color: colors.textPrimary,
-                  },
-                ]}
-                placeholder="name@example.com"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={text => {
-                  setEmail(text);
-                  if (errorMessage) setErrorMessage(null);
-                }}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-              />
+          {/* Main Content Area */}
+          <View style={styles.mainContent}>
+            {/* Top Bar with Theme Toggle */}
+            <View style={styles.topBar}>
+              <View style={styles.topBarSpacer} />
+              <ThemeToggle />
             </View>
 
-            {/* Password Field */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>PASSWORD</Text>
+            {/* Hero Branding */}
+            <View style={styles.heroSection}>
+              <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>Skin Diary</Text>
+              <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
+                Sign in to your mindful skincare ritual
+              </Text>
+            </View>
+
+            {/* Error Banner */}
+            {errorMessage ? (
               <View
                 style={[
-                  styles.passwordInputContainer,
+                  styles.errorBanner,
                   {
-                    backgroundColor: colors.card,
-                    borderColor:
-                      focusedField === 'password' ? colors.primary : colors.cardBorder,
+                    backgroundColor: isDark ? '#38221D' : '#FBECE8',
+                    borderColor: colors.primary,
                   },
                 ]}
               >
+                <Text style={[styles.errorText, { color: colors.primary }]}>{errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {/* Form Inputs */}
+            <View style={styles.formContainer}>
+              {/* Email Field */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>EMAIL</Text>
                 <TextInput
-                  style={[styles.passwordTextInput, { color: colors.textPrimary }]}
-                  placeholder="••••••••"
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor:
+                        focusedField === 'email' ? colors.primary : colors.cardBorder,
+                      color: colors.textPrimary,
+                    },
+                  ]}
+                  placeholder="name@example.com"
                   placeholderTextColor={colors.textMuted}
-                  value={password}
+                  value={email}
                   onChangeText={text => {
-                    setPassword(text);
+                    setEmail(text);
                     if (errorMessage) setErrorMessage(null);
                   }}
-                  onFocus={() => setFocusedField('password')}
+                  onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField(null)}
-                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
+                  keyboardType="email-address"
                   autoCorrect={false}
                 />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(prev => !prev)}
-                  activeOpacity={0.6}
-                  accessibilityLabel="Toggle password visibility"
-                >
-                  <Text style={[styles.eyeText, { color: colors.textMuted }]}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </Text>
-                </TouchableOpacity>
               </View>
+
+              {/* Password Field */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>PASSWORD</Text>
+                <View
+                  style={[
+                    styles.passwordInputContainer,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor:
+                        focusedField === 'password' ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.passwordTextInput, { color: colors.textPrimary }]}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    value={password}
+                    onChangeText={text => {
+                      setPassword(text);
+                      if (errorMessage) setErrorMessage(null);
+                    }}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(prev => !prev)}
+                    activeOpacity={0.6}
+                    accessibilityLabel="Toggle password visibility"
+                  >
+                    <Text style={[styles.eyeText, { color: colors.textMuted }]}>
+                      {showPassword ? 'Hide' : 'Show'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Sign In CTA Button */}
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                  isSubmitting && styles.buttonDisabled,
+                ]}
+                onPress={handleLogin}
+                disabled={isSubmitting}
+                activeOpacity={0.8}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Quick Demo Credentials Fill */}
+              <TouchableOpacity
+                style={[
+                  styles.demoButton,
+                  {
+                    borderColor: isDark ? '#3D3631' : '#E8E3DC',
+                    backgroundColor: isDark ? '#1C1A18' : '#FAF6F0',
+                  },
+                ]}
+                onPress={handleQuickDemoFill}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.demoButtonText, { color: colors.secondary }]}>
+                  ✨ Quick Demo Sign-In (Zeynep)
+                </Text>
+              </TouchableOpacity>
             </View>
-
-            {/* Sign In CTA Button */}
-            <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                { backgroundColor: colors.primary },
-                isSubmitting && styles.buttonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.primaryButtonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Quick Demo Credentials Fill (For effortless testing) */}
-            <TouchableOpacity
-              style={[
-                styles.demoButton,
-                {
-                  borderColor: isDark ? '#3D3631' : '#E8E3DC',
-                  backgroundColor: isDark ? '#1C1A18' : '#FAF6F0',
-                },
-              ]}
-              onPress={handleQuickDemoFill}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.demoButtonText, { color: colors.secondary }]}>
-                ✨ Quick Demo Sign-In (Zeynep)
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Navigation to Sign Up */}
-          <View style={styles.footerRow}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Don't have an account yet?{' '}
-            </Text>
+          {/* Minimalist Bottom Navigation to SignUp */}
+          <View style={styles.footerSection}>
             <TouchableOpacity
+              style={styles.switchAuthButton}
               onPress={() => {
                 setErrorMessage(null);
                 navigation.navigate('SignUp');
               }}
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             >
-              <Text style={[styles.footerLink, { color: colors.primary }]}>Sign Up</Text>
+              <Text style={[styles.switchAuthText, { color: colors.textSecondary }]}>
+                Don't have an account?{' '}
+                <Text style={[styles.switchAuthLink, { color: colors.primary }]}>Sign Up</Text>
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -236,14 +241,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.xl,
-    justifyContent: 'center',
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.lg,
+    justifyContent: 'space-between',
+  },
+  mainContent: {
+    flex: 1,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs,
     marginBottom: SPACING.md,
   },
   topBarSpacer: {
@@ -251,13 +260,13 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   brandTitle: {
     fontSize: 28,
     fontWeight: '400',
     letterSpacing: 2,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   heroSubtitle: {
     fontSize: 13,
@@ -277,7 +286,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formContainer: {
-    gap: SPACING.md,
+    gap: 14,
   },
   inputGroup: {
     gap: 6,
@@ -288,14 +297,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   textInput: {
-    height: 50,
+    height: 48,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
     fontSize: 14,
   },
   passwordInputContainer: {
-    height: 50,
+    height: 48,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
@@ -316,11 +325,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryButton: {
-    height: 50,
+    height: 48,
     borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
     shadowColor: '#C86D56',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -337,7 +346,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   demoButton: {
-    height: 42,
+    height: 40,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     justifyContent: 'center',
@@ -349,17 +358,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.2,
   },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  footerSection: {
+    paddingVertical: SPACING.md,
     alignItems: 'center',
-    marginTop: SPACING.xl,
+    justifyContent: 'center',
+    marginTop: SPACING.md,
   },
-  footerText: {
-    fontSize: 13,
+  switchAuthButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
-  footerLink: {
+  switchAuthText: {
     fontSize: 13,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  switchAuthLink: {
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });
