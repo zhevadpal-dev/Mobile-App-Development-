@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -8,7 +8,7 @@ import DiaryScreen from '../screens/DiaryScreen';
 import { RootTabParamList, MainStackParamList } from '../types/navigation';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { getSeasonalEmoji } from '../utils/season';
+import { useLanguage } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -35,12 +35,13 @@ export default function TabNavigator() {
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const handleOpenSettings = () => {
     navigation.navigate('Settings');
   };
 
-  const seasonalEmoji = useMemo(() => getSeasonalEmoji(), []);
+  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'Z';
 
   return (
     <Tab.Navigator
@@ -65,8 +66,8 @@ export default function TabNavigator() {
             style={[
               styles.avatarButton,
               {
-                backgroundColor: isDark ? '#1C261E' : colors.secondaryLight,
-                borderColor: colors.secondary,
+                backgroundColor: isDark ? '#3A231C' : '#FBECE8',
+                borderColor: colors.primary,
               },
             ]}
             activeOpacity={0.7}
@@ -79,7 +80,9 @@ export default function TabNavigator() {
             ) : user?.photoUri ? (
               <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.seasonalEmojiText}>{seasonalEmoji}</Text>
+              <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
+                {userInitial}
+              </Text>
             )}
           </TouchableOpacity>
         ),
@@ -102,7 +105,7 @@ export default function TabNavigator() {
         name="Routine"
         component={RoutineScreen}
         options={{
-          tabBarLabel: 'Routine',
+          tabBarLabel: t('tabRoutine'),
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="☀️" />,
         }}
       />
@@ -110,7 +113,7 @@ export default function TabNavigator() {
         name="Cabinet"
         component={CabinetScreen}
         options={{
-          tabBarLabel: 'Cabinet',
+          tabBarLabel: t('tabCabinet'),
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="🧴" />,
         }}
       />
@@ -118,7 +121,7 @@ export default function TabNavigator() {
         name="Diary"
         component={DiaryScreen}
         options={{
-          tabBarLabel: 'Diary',
+          tabBarLabel: t('tabDiary'),
           tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="✨" />,
         }}
       />
@@ -170,17 +173,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  avatarText: {
-    fontSize: 13,
-    fontWeight: '700',
+  avatarInitialText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   avatarEmojiText: {
     fontSize: 16,
-    textAlign: 'center',
-    includeFontPadding: false,
-  },
-  seasonalEmojiText: {
-    fontSize: 17,
     textAlign: 'center',
     includeFontPadding: false,
   },

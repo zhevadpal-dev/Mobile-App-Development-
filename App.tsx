@@ -7,6 +7,7 @@ import MainNavigator from './src/navigation/MainNavigator';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 
 function MainApp() {
   const { isDark, colors } = useTheme();
@@ -56,9 +57,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>
-          <MainApp />
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <MainApp />
+          </AuthProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

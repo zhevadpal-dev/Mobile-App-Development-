@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import {
   SkinConditionType,
@@ -128,6 +129,7 @@ const generateRollingDays = (): CalendarDayItem[] => {
 
 export default function DiaryScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const calendarScrollRef = useRef<any>(null);
 
   // Today string
@@ -316,7 +318,7 @@ export default function DiaryScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.todayShortcutText, { color: colors.primary }]}>
-                    Jump to Today
+                    {t('jumpToToday')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -607,7 +609,9 @@ export default function DiaryScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.saveButtonText}>
-                  Save Log for {formatLogDisplayDate(selectedDate)}
+                  {selectedDate === todayString
+                    ? t('saveTodayLog')
+                    : `${t('saveLogFor')} ${formatLogDisplayDate(selectedDate)}`}
                 </Text>
               )}
             </TouchableOpacity>
@@ -616,7 +620,7 @@ export default function DiaryScreen() {
           {/* Historical Logs List */}
           <View style={styles.historyHeaderRow}>
             <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginBottom: 0 }]}>
-              All Recorded History
+              {t('allHistory')}
             </Text>
             <Text style={[styles.historyCount, { color: colors.textSecondary }]}>
               {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
@@ -639,10 +643,10 @@ export default function DiaryScreen() {
             >
               <Text style={styles.emptyHistoryIcon}>📝</Text>
               <Text style={[styles.emptyHistoryTitle, { color: colors.textPrimary }]}>
-                No Skin Logs Yet
+                {t('noLogsYet')}
               </Text>
               <Text style={[styles.emptyHistorySubtitle, { color: colors.textSecondary }]}>
-                Tap any emoji above to start tracking your daily skin evolution.
+                {t('startTrackingPrompt')}
               </Text>
             </View>
           ) : (

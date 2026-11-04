@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootTabParamList } from '../types/navigation';
@@ -49,6 +50,7 @@ const SAMPLE_PM_STEPS: RoutineStep[] = [
 
 export default function RoutineScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const navigation = useNavigation<NavigationProp<RootTabParamList>>();
   // Set default routine tab based on device's current local time
   const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>(getDefaultRoutineByTime);
@@ -83,7 +85,7 @@ export default function RoutineScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Skincare Routine</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t('routineTitle')}</Text>
         </View>
 
         {/* AM / PM Routine Toggle */}
@@ -116,7 +118,7 @@ export default function RoutineScreen() {
                 },
               ]}
             >
-              ☀️ Morning Routine
+              ☀️ {t('morningRoutine')}
             </Text>
           </TouchableOpacity>
 
@@ -143,7 +145,7 @@ export default function RoutineScreen() {
                 },
               ]}
             >
-              🌙 Evening Routine
+              🌙 {t('eveningRoutine')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -160,7 +162,7 @@ export default function RoutineScreen() {
         >
           <View style={styles.progressHeader}>
             <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
-              {completedCount} of {steps.length} steps completed
+              {completedCount} / {steps.length} {t('stepsCompleted')}
             </Text>
             <Text style={[styles.progressPercent, { color: colors.primary }]}>
               {progressPercent}%
@@ -291,8 +293,8 @@ export default function RoutineScreen() {
             ]}
           >
             {completedCount === steps.length
-              ? '✨ Routine Completed! Log Skin'
-              : 'Complete All Steps to Log'}
+              ? `✨ ${t('routineCompletedBtn')}`
+              : `${completedCount}/${steps.length} ${t('stepsCompleted')}`}
           </Text>
         </TouchableOpacity>
       </ScrollView>

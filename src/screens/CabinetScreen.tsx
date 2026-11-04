@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import {
   Product,
@@ -99,6 +100,7 @@ const getCategoryMeta = (category: string) => {
 
 export default function CabinetScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -242,7 +244,7 @@ export default function CabinetScreen() {
           <View style={styles.titleRow}>
             <View>
               <Text style={[styles.title, { color: colors.textPrimary }]}>
-                Product Cabinet
+                {t('cabinetTitle')}
               </Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
                 {products.length} {products.length === 1 ? 'product' : 'products'} • Sorted thinnest to thickest
@@ -253,7 +255,7 @@ export default function CabinetScreen() {
               onPress={() => setIsModalVisible(true)}
               activeOpacity={0.85}
             >
-              <Text style={styles.addButtonText}>+ Add</Text>
+              <Text style={styles.addButtonText}>+ {t('addProduct')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -518,7 +520,7 @@ export default function CabinetScreen() {
                   NEW ADDITION
                 </Text>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                  Add Skincare Product
+                  {t('newProductTitle')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -538,7 +540,7 @@ export default function CabinetScreen() {
               {/* Product Name Input */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
-                  Product Name <Text style={{ color: colors.primary }}>*</Text>
+                  {t('productName')} <Text style={{ color: colors.primary }}>*</Text>
                 </Text>
                 <TextInput
                   style={[
@@ -582,7 +584,7 @@ export default function CabinetScreen() {
               {/* Category Selector */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
-                  Skincare Category <Text style={{ color: colors.primary }}>*</Text>
+                  {t('category')} <Text style={{ color: colors.primary }}>*</Text>
                 </Text>
                 <Text style={[styles.inputHelp, { color: colors.textSecondary }]}>
                   Determines application sorting order (thinnest to thickest)
@@ -657,7 +659,7 @@ export default function CabinetScreen() {
               <View style={styles.inputGroup}>
                 <View style={styles.labelWithActionRow}>
                   <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
-                    Opened Date <Text style={{ color: colors.primary }}>*</Text>
+                    {t('openedDate')} <Text style={{ color: colors.primary }}>*</Text>
                   </Text>
                   <TouchableOpacity
                     onPress={() => setOpenedDate(getTodayFormatted())}
@@ -702,7 +704,7 @@ export default function CabinetScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>
-                    Cancel
+                    {t('cancel')}
                   </Text>
                 </TouchableOpacity>
 
@@ -718,7 +720,7 @@ export default function CabinetScreen() {
                   {isSubmitting ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.modalSaveText}>Save to Cabinet</Text>
+                    <Text style={styles.modalSaveText}>{t('saveProduct')}</Text>
                   )}
                 </TouchableOpacity>
               </View>

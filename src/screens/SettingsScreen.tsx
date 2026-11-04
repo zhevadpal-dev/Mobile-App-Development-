@@ -18,8 +18,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
-import { getSeasonalEmoji, getSeasonName } from '../utils/season';
 
 interface CuteAvatarOption {
   key: string;
@@ -42,8 +42,7 @@ export default function SettingsScreen() {
   const navigation = useNavigation();
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, updateProfile, logout } = useAuth();
-  const seasonalEmoji = getSeasonalEmoji();
-  const seasonName = getSeasonName();
+  const { t, language, setLanguage } = useLanguage();
 
   const [name, setName] = useState(user?.name || '');
   const [photoUri, setPhotoUri] = useState<string | undefined>(user?.photoUri);
@@ -72,7 +71,7 @@ export default function SettingsScreen() {
       setIsSavingName(true);
       await updateProfile({ name: name.trim() });
       setHasUnsavedNameChange(false);
-      Alert.alert('Saved ✨', 'Your profile name has been updated.');
+      Alert.alert(t('savedAlert'), t('nameUpdated'));
     } catch (error) {
       console.error('Error updating name:', error);
       Alert.alert('Error', 'Could not save profile name.');
@@ -181,12 +180,12 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out of Skin Diary?',
+      t('logOut'),
+      t('logOutConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Log Out',
+          text: t('logOut'),
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -196,7 +195,7 @@ export default function SettingsScreen() {
     );
   };
 
-  const userInitial = (name || user?.name || 'U').trim().charAt(0).toUpperCase();
+  const userInitial = (name || user?.name || 'Z').trim().charAt(0).toUpperCase();
   const isAvatarEmoji = photoUri?.startsWith('avatar:');
   const avatarEmojiChar = isAvatarEmoji ? photoUri?.replace('avatar:', '') : null;
 
@@ -204,14 +203,14 @@ export default function SettingsScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* Settings Top Bar */}
       <View style={[styles.topBar, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>Settings</Text>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>{t('settingsTitle')}</Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={[styles.closeButton, { backgroundColor: isDark ? '#23211F' : '#EFECE6' }]}
           activeOpacity={0.7}
           accessibilityLabel="Close settings"
         >
-          <Text style={[styles.closeButtonText, { color: colors.textPrimary }]}>✕ Done</Text>
+          <Text style={[styles.closeButtonText, { color: colors.textPrimary }]}>✕ {t('done')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -223,7 +222,7 @@ export default function SettingsScreen() {
         {/* Section 1: Profile Management */}
         <View style={styles.section}>
           <Text style={[styles.sectionEyebrow, { color: colors.textMuted }]}>
-            PROFILE MANAGEMENT
+            {t('profileManagement')}
           </Text>
 
           <View
@@ -253,10 +252,12 @@ export default function SettingsScreen() {
                   <View
                     style={[
                       styles.largeAvatarPlaceholder,
-                      { backgroundColor: isDark ? '#1C261E' : colors.secondaryLight },
+                      { backgroundColor: isDark ? '#3A231C' : '#FBECE8' },
                     ]}
                   >
-                    <Text style={styles.largeAvatarEmoji}>{seasonalEmoji}</Text>
+                    <Text style={[styles.largeAvatarInitial, { color: colors.primary }]}>
+                      {userInitial}
+                    </Text>
                   </View>
                 )}
 
@@ -284,7 +285,7 @@ export default function SettingsScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.editPhotoText, { color: colors.primary }]}>
-                    {photoUri ? 'Edit Profile Photo' : 'Upload Profile Photo'}
+                    {photoUri ? t('editPhoto') : t('uploadPhoto')}
                   </Text>
                 </TouchableOpacity>
 
@@ -295,7 +296,7 @@ export default function SettingsScreen() {
                     activeOpacity={0.6}
                   >
                     <Text style={[styles.removePhotoText, { color: colors.textMuted }]}>
-                      Remove Photo / Avatar
+                      {t('removePhoto')}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -308,7 +309,7 @@ export default function SettingsScreen() {
             {/* Edit Name Input */}
             <View style={styles.inputGroup}>
               <View style={styles.inputLabelRow}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>NAME</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('name')}</Text>
                 {hasUnsavedNameChange ? (
                   <Text style={[styles.unsavedBadge, { color: colors.primary }]}>Unsaved</Text>
                 ) : null}
@@ -325,7 +326,7 @@ export default function SettingsScreen() {
                   ]}
                   value={name}
                   onChangeText={handleNameChange}
-                  placeholder="Enter your name"
+                  placeholder={t('name')}
                   placeholderTextColor={colors.textMuted}
                   maxLength={40}
                   autoCapitalize="words"
@@ -340,7 +341,7 @@ export default function SettingsScreen() {
                     {isSavingName ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
-                      <Text style={styles.saveNameButtonText}>Save</Text>
+                      <Text style={styles.saveNameButtonText}>{t('save')}</Text>
                     )}
                   </TouchableOpacity>
                 ) : null}
@@ -349,7 +350,7 @@ export default function SettingsScreen() {
 
             {/* Email (Read-Only) */}
             <View style={[styles.inputGroup, { marginTop: 12 }]}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>EMAIL</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('email')}</Text>
               <View
                 style={[
                   styles.readOnlyBox,
@@ -370,7 +371,7 @@ export default function SettingsScreen() {
         {/* Section 2: App Settings / Preferences */}
         <View style={styles.section}>
           <Text style={[styles.sectionEyebrow, { color: colors.textMuted }]}>
-            APP SETTINGS
+            {t('appSettings')}
           </Text>
 
           <View
@@ -382,6 +383,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
+            {/* Dark Mode Row */}
             <View style={styles.preferenceRow}>
               <View style={styles.preferenceLeft}>
                 <View
@@ -394,10 +396,10 @@ export default function SettingsScreen() {
                 </View>
                 <View>
                   <Text style={[styles.preferenceTitle, { color: colors.textPrimary }]}>
-                    Dark Mode
+                    {t('appearance')}
                   </Text>
                   <Text style={[styles.preferenceSubtitle, { color: colors.textSecondary }]}>
-                    {isDark ? 'Dark theme active' : 'Light cream theme active'}
+                    {isDark ? t('appearanceSubDark') : t('appearanceSubLight')}
                   </Text>
                 </View>
               </View>
@@ -413,14 +415,106 @@ export default function SettingsScreen() {
                 ios_backgroundColor={isDark ? '#3D3A37' : '#E8E3DC'}
               />
             </View>
+
+            {/* Divider */}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Language Selection Row */}
+            <View style={styles.preferenceRow}>
+              <View style={styles.preferenceLeft}>
+                <View
+                  style={[
+                    styles.preferenceIconBubble,
+                    { backgroundColor: isDark ? '#2D2824' : '#F6EFEA' },
+                  ]}
+                >
+                  <Text style={styles.preferenceIcon}>🌐</Text>
+                </View>
+                <View>
+                  <Text style={[styles.preferenceTitle, { color: colors.textPrimary }]}>
+                    {t('language')}
+                  </Text>
+                  <Text style={[styles.preferenceSubtitle, { color: colors.textSecondary }]}>
+                    {t('languageSub')}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Language Flag Selector */}
+              <View
+                style={[
+                  styles.langSegmentGroup,
+                  {
+                    backgroundColor: isDark ? '#1F1E1B' : '#EFECE6',
+                    borderColor: colors.cardBorder,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.langSegmentButton,
+                    language === 'en' && [
+                      styles.langSegmentButtonActive,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.primary,
+                      },
+                    ],
+                  ]}
+                  onPress={() => setLanguage('en')}
+                  activeOpacity={0.7}
+                  accessibilityLabel="English"
+                >
+                  <Text
+                    style={[
+                      styles.langSegmentText,
+                      {
+                        color: language === 'en' ? colors.primary : colors.textMuted,
+                        fontWeight: language === 'en' ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    🇬🇧 EN
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.langSegmentButton,
+                    language === 'tr' && [
+                      styles.langSegmentButtonActive,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.primary,
+                      },
+                    ],
+                  ]}
+                  onPress={() => setLanguage('tr')}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Türkçe"
+                >
+                  <Text
+                    style={[
+                      styles.langSegmentText,
+                      {
+                        color: language === 'tr' ? colors.primary : colors.textMuted,
+                        fontWeight: language === 'tr' ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    🇹🇷 TR
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Section 3: App Information */}
+        {/* Section 3: App Information (Brand Rule: Skin Diary remains strictly untranslated) */}
         <View style={styles.infoSection}>
           <Text style={[styles.appName, { color: colors.textPrimary }]}>Skin Diary</Text>
           <Text style={[styles.appVersion, { color: colors.textMuted }]}>
-            Version 1.0.0 • Mindful Skincare Rituals
+            {t('versionInfo')}
           </Text>
         </View>
 
@@ -439,7 +533,7 @@ export default function SettingsScreen() {
             accessibilityLabel="Log out of account"
           >
             <Text style={[styles.logoutButtonText, { color: colors.primary }]}>
-              Log Out
+              {t('logOut')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -474,7 +568,7 @@ export default function SettingsScreen() {
               /* Main Menu: Choose Avatar | Choose from Gallery | Take a Photo */
               <View style={styles.sheetMenuContent}>
                 <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
-                  Edit Profile Photo
+                  {t('editPhoto')}
                 </Text>
                 <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
                   Personalize how you appear in your daily rituals
@@ -503,7 +597,7 @@ export default function SettingsScreen() {
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
-                        Choose Cute Avatar
+                        {t('chooseAvatar')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
                         Pick a minimalist aesthetic skin ritual icon
@@ -534,7 +628,7 @@ export default function SettingsScreen() {
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
-                        Choose from Gallery
+                        {t('chooseGallery')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
                         Select a portrait from your photo library
@@ -565,7 +659,7 @@ export default function SettingsScreen() {
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
-                        Take a Photo
+                        {t('takePhoto')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
                         Capture a fresh photo with your camera
@@ -597,7 +691,7 @@ export default function SettingsScreen() {
                       </View>
                       <View style={styles.sheetOptionTextContainer}>
                         <Text style={[styles.sheetOptionTitle, { color: colors.primary }]}>
-                          Remove Current Photo
+                          {t('removePhoto')}
                         </Text>
                         <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
                           Reset back to your name initials
@@ -617,7 +711,7 @@ export default function SettingsScreen() {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.sheetCancelText, { color: colors.textPrimary }]}>
-                    Cancel
+                    {t('cancel')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -904,6 +998,32 @@ const styles = StyleSheet.create({
   },
   preferenceSubtitle: {
     fontSize: 12,
+  },
+  langSegmentGroup: {
+    flexDirection: 'row',
+    borderRadius: RADIUS.full,
+    padding: 3,
+    borderWidth: 1,
+  },
+  langSegmentButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langSegmentButtonActive: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  langSegmentText: {
+    fontSize: 12,
+    letterSpacing: 0.3,
   },
   infoSection: {
     alignItems: 'center',
