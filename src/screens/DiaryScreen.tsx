@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -26,8 +26,17 @@ import {
   deleteDiaryLog,
 } from '../services/diaryStorage';
 
+interface CalendarDayItem {
+  dateString: string; // 'YYYY-MM-DD'
+  dayName: string; // 'Mon', 'Tue', ...
+  dayNumber: number; // 1 - 31
+  monthName: string; // 'Nov'
+  isToday: boolean;
+  isFuture: boolean;
+}
+
 /**
- * Format log date for elegant display
+ * Format date for human-readable display
  */
 const formatLogDisplayDate = (dateStr: string): string => {
   const now = new Date();
@@ -70,9 +79,9 @@ const formatLogDisplayDate = (dateStr: string): string => {
 };
 
 /**
- * Get current date string in YYYY-MM-DD
+ * Get current date string in YYYY-MM-DD format
  */
-const getCurrentDateString = (): string => {
+const getTodayDateString = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -80,19 +89,81 @@ const getCurrentDateString = (): string => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Generate rolling time-aware days centered on today
+ */
+const generateRollingDays = (): CalendarDayItem[] => {
+  const days: CalendarDayItem[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Generate 8 past days, today, and 3 future days (total 12 days)
+  for (let i = -8; i <= 3; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+    const dayNumber = d.getDate();
+    const isToday = i === 0;
+    const isFuture = i > 0;
+
+    days.push({
+      dateString,
+      dayName,
+      dayNumber,
+      monthName,
+      isToday,
+      isFuture,
+    });
+  }
+  return days;
+};
+
 export default function DiaryScreen() {
   const { colors, isDark } = useTheme();
+  const calendarScrollRef = useRef<any>(null);
 
-  // Selected skin state (default to Hydrated)
+  // Today string
+  const todayString = useMemo(() => getTodayDateString(), []);
+
+  // Time-aware calendar days
+  const calendarDays = useMemo(() => generateRollingDays(), []);
+
+  // Selected date on calendar (defaults to today)
+  const [selectedDate, setSelectedDate] = useState<string>(todayString);
+
+  // Selected skin state for check-in
   const [selectedConditionKey, setSelectedConditionKey] = useState<SkinConditionType>('hydrated');
   const [note, setNote] = useState<string>('');
   const [logs, setLogs] = useState<DiaryLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  // Active condition details
+  // Active condition details for the check-in section
   const activeCondition: SkinConditionOption =
     SKIN_CONDITIONS.find(c => c.key === selectedConditionKey) || SKIN_CONDITIONS[0];
+
+  // Group logs by date string
+  const logsByDate = useMemo(() => {
+    const map: Record<string, DiaryLogEntry[]> = {};
+    logs.forEach(log => {
+      if (!map[log.date]) {
+        map[log.date] = [];
+      }
+      map[log.date].push(log);
+    });
+    return map;
+  }, [logs]);
+
+  // Selected day's log (if any)
+  const selectedDayLogs = logsByDate[selectedDate] || [];
+  const selectedDayPrimaryLog: DiaryLogEntry | undefined = selectedDayLogs[0];
 
   /**
    * Load history from AsyncStorage
@@ -114,12 +185,27 @@ export default function DiaryScreen() {
   }, [loadLogs]);
 
   /**
-   * Save Today's Skin Log
+   * Automatically center calendar strip on Today on mount
+   */
+  useEffect(() => {
+    const todayIndex = calendarDays.findIndex(d => d.isToday);
+    if (todayIndex !== -1 && calendarScrollRef.current) {
+      const cardWidth = 56;
+      const offset = Math.max(0, todayIndex * cardWidth - 110);
+      const timer = setTimeout(() => {
+        calendarScrollRef.current?.scrollTo?.({ x: offset, animated: true });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [calendarDays]);
+
+  /**
+   * Save Skin Log for selected date
    */
   const handleSaveLog = async () => {
     try {
       setIsSaving(true);
-      const date = getCurrentDateString();
+      const date = selectedDate || todayString;
 
       await addDiaryLog({
         date,
@@ -133,7 +219,10 @@ export default function DiaryScreen() {
 
       setNote('');
       await loadLogs();
-      Alert.alert('Skin Logged ✨', `Recorded as ${activeCondition.label} for ${formatLogDisplayDate(date)}.`);
+      Alert.alert(
+        'Skin Logged ✨',
+        `Recorded as ${activeCondition.label} for ${formatLogDisplayDate(date)}.`
+      );
     } catch (error) {
       console.error('Error saving skin log:', error);
       Alert.alert('Save Error', 'Could not save your log. Please try again.');
@@ -167,6 +256,18 @@ export default function DiaryScreen() {
     );
   };
 
+  // Header month text from currently selected date
+  const selectedMonthText = useMemo(() => {
+    try {
+      const parts = selectedDate.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+    } catch {}
+    return 'November 2026';
+  }, [selectedDate]);
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
@@ -178,15 +279,216 @@ export default function DiaryScreen() {
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Skin Diary</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Log how your skin feels today to receive actionable care tips.
+              Track your skin history, discover tailored tips, and build consistent habits.
             </Text>
           </View>
 
-          {/* Skin Condition Selector */}
-          <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-            How does your skin feel today?
+          {/* Time-Aware Calendar Section */}
+          <View style={styles.calendarSection}>
+            <View style={styles.calendarHeaderRow}>
+              <View style={styles.calendarTitleGroup}>
+                <Text style={[styles.calendarMonthText, { color: colors.textPrimary }]}>
+                  {selectedMonthText}
+                </Text>
+                <Text style={[styles.calendarSubText, { color: colors.textSecondary }]}>
+                  Selected: {formatLogDisplayDate(selectedDate)}
+                </Text>
+              </View>
+
+              {selectedDate !== todayString && (
+                <TouchableOpacity
+                  onPress={() => setSelectedDate(todayString)}
+                  style={[
+                    styles.todayShortcutButton,
+                    {
+                      backgroundColor: isDark ? '#2A2622' : '#F4EEE7',
+                      borderColor: isDark ? '#3D3630' : '#E6DED5',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.todayShortcutText, { color: colors.primary }]}>
+                    Jump to Today
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Rolling Weekly Strip */}
+            <ScrollView
+              ref={calendarScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.calendarStripContent}
+            >
+              {calendarDays.map(item => {
+                const isSelected = selectedDate === item.dateString;
+                const dayLogs = logsByDate[item.dateString];
+                const hasLog = Boolean(dayLogs && dayLogs.length > 0);
+                const loggedEmoji = dayLogs?.[0]?.emoji;
+
+                return (
+                  <TouchableOpacity
+                    key={item.dateString}
+                    style={[
+                      styles.dayColumn,
+                      {
+                        backgroundColor: isSelected
+                          ? isDark ? '#38251E' : colors.primaryLight
+                          : isDark ? '#1C1B19' : colors.card,
+                        borderColor: isSelected
+                          ? colors.primary
+                          : item.isToday
+                          ? colors.secondary
+                          : colors.cardBorder,
+                      },
+                    ]}
+                    onPress={() => setSelectedDate(item.dateString)}
+                    activeOpacity={0.75}
+                  >
+                    {/* Day Name (Mon, Tue) */}
+                    <Text
+                      style={[
+                        styles.dayNameText,
+                        {
+                          color: isSelected
+                            ? colors.primary
+                            : item.isToday
+                            ? colors.secondary
+                            : colors.textMuted,
+                          fontWeight: item.isToday || isSelected ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {item.dayName}
+                    </Text>
+
+                    {/* Day Number (4, 5) */}
+                    <Text
+                      style={[
+                        styles.dayNumberText,
+                        {
+                          color: isSelected
+                            ? colors.primary
+                            : colors.textPrimary,
+                          fontWeight: isSelected || item.isToday ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {item.dayNumber}
+                    </Text>
+
+                    {/* Indicator Area (Logged Emoji or Subtle Dot) */}
+                    <View style={styles.indicatorContainer}>
+                      {hasLog ? (
+                        <Text style={styles.loggedEmojiIndicator}>{loggedEmoji}</Text>
+                      ) : item.isToday ? (
+                        <View
+                          style={[
+                            styles.todayDot,
+                            { backgroundColor: colors.secondary },
+                          ]}
+                        />
+                      ) : (
+                        <View style={styles.emptyIndicatorDot} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Interactive Date Insight Card (When Tapped) */}
+          {selectedDayPrimaryLog ? (
+            <View
+              style={[
+                styles.insightCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: isDark ? '#3D2F28' : '#EFEAE3',
+                },
+              ]}
+            >
+              <View style={styles.insightHeaderRow}>
+                <View style={styles.insightConditionRow}>
+                  <Text style={styles.insightEmoji}>{selectedDayPrimaryLog.emoji}</Text>
+                  <View>
+                    <Text style={[styles.insightConditionTitle, { color: colors.textPrimary }]}>
+                      {selectedDayPrimaryLog.label}
+                    </Text>
+                    <Text style={[styles.insightDateText, { color: colors.textMuted }]}>
+                      {formatLogDisplayDate(selectedDayPrimaryLog.date)}{' '}
+                      {selectedDayPrimaryLog.time ? `• ${selectedDayPrimaryLog.time}` : ''}
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    handleDeleteLog(
+                      selectedDayPrimaryLog.id,
+                      selectedDayPrimaryLog.label,
+                      selectedDayPrimaryLog.date
+                    )
+                  }
+                  style={styles.insightDeleteButton}
+                  activeOpacity={0.6}
+                  accessibilityLabel="Delete entry"
+                >
+                  <Text style={[styles.insightDeleteText, { color: colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Saved Smart Tip */}
+              <View
+                style={[
+                  styles.insightTipContainer,
+                  {
+                    backgroundColor: isDark ? '#23211F' : '#FAF8F5',
+                    borderColor: isDark ? '#33302B' : '#EFECE6',
+                  },
+                ]}
+              >
+                <Text style={[styles.insightTipHeading, { color: colors.primary }]}>
+                  💡 {selectedDayPrimaryLog.tipTitle}
+                </Text>
+                <Text style={[styles.insightTipBody, { color: colors.textSecondary }]}>
+                  {selectedDayPrimaryLog.tipDescription}
+                </Text>
+              </View>
+
+              {/* Saved Note if present */}
+              {selectedDayPrimaryLog.note ? (
+                <Text style={[styles.insightNoteText, { color: colors.textPrimary }]}>
+                  "{selectedDayPrimaryLog.note}"
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.emptyDayNotice,
+                {
+                  backgroundColor: isDark ? '#1C1B19' : colors.card,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.emptyDayNoticeText, { color: colors.textSecondary }]}>
+                {selectedDate === todayString
+                  ? 'No skin entry logged yet for today. Select how your skin feels below to record it.'
+                  : `No skin entry recorded for ${formatLogDisplayDate(selectedDate)}.`}
+              </Text>
+            </View>
+          )}
+
+          {/* Daily Skin Check-In Section */}
+          <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginTop: SPACING.md }]}>
+            How does your skin feel {selectedDate === todayString ? 'today' : `on ${formatLogDisplayDate(selectedDate)}`}?
           </Text>
 
+          {/* Minimal Emoji Buttons */}
           <View style={styles.emojiGrid}>
             {SKIN_CONDITIONS.map(item => {
               const isSelected = selectedConditionKey === item.key;
@@ -271,7 +573,7 @@ export default function DiaryScreen() {
             </View>
           </View>
 
-          {/* Quick Note Input */}
+          {/* Quick Note Input & Save Button */}
           <View style={styles.noteInputContainer}>
             <TextInput
               style={[
@@ -282,14 +584,13 @@ export default function DiaryScreen() {
                   color: colors.textPrimary,
                 },
               ]}
-              placeholder="Optional note (e.g. new moisturizer, sun exposure)..."
+              placeholder="Optional note (e.g. hydration mask, travel, reaction)..."
               placeholderTextColor={colors.textMuted}
               value={note}
               onChangeText={setNote}
               maxLength={120}
             />
 
-            {/* Save Log Button */}
             <TouchableOpacity
               style={[styles.saveButton, { backgroundColor: colors.primary }]}
               onPress={handleSaveLog}
@@ -299,15 +600,17 @@ export default function DiaryScreen() {
               {isSaving ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.saveButtonText}>Save Today's Log</Text>
+                <Text style={styles.saveButtonText}>
+                  Save Log for {formatLogDisplayDate(selectedDate)}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* History Section */}
+          {/* Historical Logs List */}
           <View style={styles.historyHeaderRow}>
             <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginBottom: 0 }]}>
-              History Log
+              All Recorded History
             </Text>
             <Text style={[styles.historyCount, { color: colors.textSecondary }]}>
               {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
@@ -333,7 +636,7 @@ export default function DiaryScreen() {
                 No Skin Logs Yet
               </Text>
               <Text style={[styles.emptyHistorySubtitle, { color: colors.textSecondary }]}>
-                Log how your skin feels to begin tracking your skin changes over time.
+                Tap any emoji above to start tracking your daily skin evolution.
               </Text>
             </View>
           ) : (
@@ -364,13 +667,11 @@ export default function DiaryScreen() {
 
                     <TouchableOpacity
                       onPress={() => handleDeleteLog(entry.id, entry.label, entry.date)}
-                      style={styles.deleteButton}
+                      style={styles.deleteIconButton}
                       activeOpacity={0.6}
                       accessibilityLabel="Delete entry"
                     >
-                      <Text style={[styles.deleteButtonText, { color: colors.textMuted }]}>
-                        ✕
-                      </Text>
+                      <Text style={[styles.deleteIconText, { color: colors.textMuted }]}>✕</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -429,6 +730,146 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
     lineHeight: 18,
+  },
+  calendarSection: {
+    marginBottom: SPACING.md,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  calendarTitleGroup: {
+    gap: 2,
+  },
+  calendarMonthText: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  calendarSubText: {
+    fontSize: 11,
+  },
+  todayShortcutButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+  },
+  todayShortcutText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  calendarStripContent: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  dayColumn: {
+    width: 50,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  dayNameText: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  dayNumberText: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  indicatorContainer: {
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loggedEmojiIndicator: {
+    fontSize: 13,
+  },
+  todayDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  emptyIndicatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0,
+  },
+  insightCard: {
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+  },
+  insightHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  insightConditionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  insightEmoji: {
+    fontSize: 26,
+  },
+  insightConditionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  insightDateText: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  insightDeleteButton: {
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  insightDeleteText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  insightTipContainer: {
+    padding: 10,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  insightTipHeading: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+  insightTipBody: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  insightNoteText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+    lineHeight: 16,
+  },
+  emptyDayNotice: {
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+  },
+  emptyDayNoticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontStyle: 'italic',
   },
   sectionHeading: {
     fontSize: 15,
@@ -591,13 +1032,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
-  deleteButton: {
+  deleteIconButton: {
     width: 28,
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  deleteButtonText: {
+  deleteIconText: {
     fontSize: 14,
     fontWeight: '600',
   },
