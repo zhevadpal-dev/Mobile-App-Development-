@@ -58,11 +58,7 @@ export default function RoutineScreen() {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: colors.primary }]}>DAILY RITUAL</Text>
           <Text style={[styles.title, { color: colors.textPrimary }]}>Skincare Routine</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Sorted thinnest to thickest for optimal absorption.
-          </Text>
         </View>
 
         {/* AM / PM Routine Toggle */}
@@ -287,23 +283,12 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl,
   },
   header: {
-    marginBottom: SPACING.md,
-  },
-  eyebrow: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
     letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 4,
   },
   segmentedControl: {
     flexDirection: 'row',
