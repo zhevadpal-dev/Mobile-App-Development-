@@ -96,8 +96,8 @@ export default function TabNavigator() {
 const styles = StyleSheet.create({
   headerTitleText: {
     fontSize: 20,
-    fontWeight: '300',
-    letterSpacing: 1.5,
+    fontWeight: '500',
+    letterSpacing: 1.0,
   },
   tabBar: {
     borderTopWidth: 1,

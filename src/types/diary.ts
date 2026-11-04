@@ -36,7 +36,7 @@ export const SKIN_CONDITIONS: SkinConditionOption[] = [
   },
   {
     key: 'sensitive',
-    emoji: '🔴',
+    emoji: '🌸',
     label: 'Sensitive',
     tipTitle: 'Barrier Recovery Mode',
     tipDescription: 'Your skin is reactive today. Skip strong active acids (AHA/BHA), retinoids, and exfoliating scrubs. Focus strictly on soothing centella asiatica, panthenol, and ceramides.',
@@ -44,7 +44,7 @@ export const SKIN_CONDITIONS: SkinConditionOption[] = [
   },
   {
     key: 'breakout',
-    emoji: '🛑',
+    emoji: '🩹',
     label: 'Breakout',
     tipTitle: 'Targeted Blemish Care',
     tipDescription: 'Treat active inflammation gently. Apply a targeted 2% salicylic acid or tea tree spot treatment. Avoid picking, keep pillowcases clean, and use non-comedogenic moisturizers.',
