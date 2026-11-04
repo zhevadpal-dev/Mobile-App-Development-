@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../types/navigation';
@@ -79,9 +80,23 @@ export default function LoginScreen({ navigation }: Props) {
               <ThemeToggle />
             </View>
 
-            {/* Hero Branding */}
+            {/* Hero Branding with Lotus Asset */}
             <View style={styles.heroSection}>
-              <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>Skin Diary</Text>
+              <View
+                style={[
+                  styles.logoContainer,
+                  {
+                    shadowColor: isDark ? '#000000' : '#262422',
+                  },
+                ]}
+              >
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                  accessibilityLabel="Skin Diary Lotus Logo"
+                />
+              </View>
               <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
                 {t('signInSubtitle')}
               </Text>
@@ -264,16 +279,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.lg,
   },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '400',
-    letterSpacing: 2,
-    marginBottom: 6,
+  logoContainer: {
+    width: 104,
+    height: 104,
+    borderRadius: 24,
+    marginBottom: SPACING.sm,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  brandLogo: {
+    width: 104,
+    height: 104,
+    borderRadius: 24,
   },
   heroSubtitle: {
     fontSize: 13,
     letterSpacing: 0.2,
     textAlign: 'center',
+    marginTop: 4,
   },
   errorBanner: {
     paddingHorizontal: SPACING.md,
