@@ -14,33 +14,27 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SPACING, RADIUS } from '../constants/theme';
 
-// Curated aesthetic skincare mock avatars for uploading/mocking profile pictures
-const MOCK_PHOTO_PRESETS = [
-  {
-    id: 'avatar_1',
-    label: 'Dewy Glow',
-    uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 'avatar_2',
-    label: 'Fresh Radiance',
-    uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 'avatar_3',
-    label: 'Pure Botanical',
-    uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 'avatar_4',
-    label: 'Natural Minimal',
-    uri: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
-  },
+interface CuteAvatarOption {
+  key: string;
+  emoji: string;
+  label: string;
+}
+
+const CUTE_AVATARS: CuteAvatarOption[] = [
+  { key: 'botanical', emoji: '🌿', label: 'Botanical' },
+  { key: 'radiance', emoji: '✨', label: 'Radiance' },
+  { key: 'blossom', emoji: '🌸', label: 'Blossom' },
+  { key: 'bear', emoji: '🧸', label: 'Cozy Bear' },
+  { key: 'bubbles', emoji: '🫧', label: 'Gentle Mist' },
+  { key: 'matcha', emoji: '🍵', label: 'Matcha Tea' },
+  { key: 'honey', emoji: '🍯', label: 'Honey Glow' },
+  { key: 'barrier', emoji: '🥑', label: 'Nourish' },
 ];
 
 export default function SettingsScreen() {
@@ -50,8 +44,9 @@ export default function SettingsScreen() {
 
   const [name, setName] = useState(user?.name || '');
   const [photoUri, setPhotoUri] = useState<string | undefined>(user?.photoUri);
-  const [isPhotoModalVisible, setIsPhotoModalVisible] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSheetVisible, setIsSheetVisible] = useState(false);
+  const [sheetView, setSheetView] = useState<'menu' | 'avatars'>('menu');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [hasUnsavedNameChange, setHasUnsavedNameChange] = useState(false);
 
   useEffect(() => {
@@ -71,7 +66,7 @@ export default function SettingsScreen() {
     }
 
     try {
-      setIsSaving(true);
+      setIsSavingName(true);
       await updateProfile({ name: name.trim() });
       setHasUnsavedNameChange(false);
       Alert.alert('Saved ✨', 'Your profile name has been updated.');
@@ -79,28 +74,103 @@ export default function SettingsScreen() {
       console.error('Error updating name:', error);
       Alert.alert('Error', 'Could not save profile name.');
     } finally {
-      setIsSaving(false);
+      setIsSavingName(false);
     }
   };
 
-  const handleSelectPhoto = async (newUri: string) => {
+  const openSheet = () => {
+    setSheetView('menu');
+    setIsSheetVisible(true);
+  };
+
+  /**
+   * 1. Choose Cute Avatar
+   */
+  const handleSelectCuteAvatar = async (emoji: string) => {
+    const avatarUri = `avatar:${emoji}`;
     try {
-      setIsPhotoModalVisible(false);
-      setPhotoUri(newUri);
-      await updateProfile({ photoUri: newUri });
-      Alert.alert('Photo Updated ✨', 'Your profile photo is now updated across the app.');
+      setIsSheetVisible(false);
+      setPhotoUri(avatarUri);
+      await updateProfile({ photoUri: avatarUri });
     } catch (error) {
-      console.error('Error updating photo:', error);
-      Alert.alert('Error', 'Could not save profile photo.');
+      console.error('Error saving avatar:', error);
+      Alert.alert('Error', 'Could not update avatar.');
     }
   };
 
+  /**
+   * 2. Choose from Gallery
+   */
+  const handleChooseFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Photo Library Permission Needed',
+          'Please allow photo library access in your device settings to choose a profile photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const pickedUri = result.assets[0].uri;
+        setIsSheetVisible(false);
+        setPhotoUri(pickedUri);
+        await updateProfile({ photoUri: pickedUri });
+      }
+    } catch (error) {
+      console.error('Gallery picker error:', error);
+      Alert.alert('Error', 'Could not open image library.');
+    }
+  };
+
+  /**
+   * 3. Take a Photo with Camera
+   */
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Needed',
+          'Please allow camera access in your device settings to take a profile photo.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const takenUri = result.assets[0].uri;
+        setIsSheetVisible(false);
+        setPhotoUri(takenUri);
+        await updateProfile({ photoUri: takenUri });
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Could not launch camera.');
+    }
+  };
+
+  /**
+   * Remove Photo / Avatar
+   */
   const handleRemovePhoto = async () => {
     try {
-      setIsPhotoModalVisible(false);
+      setIsSheetVisible(false);
       setPhotoUri(undefined);
       await updateProfile({ photoUri: null });
-      Alert.alert('Photo Removed', 'Your profile photo has been reset to your initials.');
     } catch (error) {
       console.error('Error removing photo:', error);
     }
@@ -124,6 +194,8 @@ export default function SettingsScreen() {
   };
 
   const userInitial = (name || user?.name || 'U').trim().charAt(0).toUpperCase();
+  const isAvatarEmoji = photoUri?.startsWith('avatar:');
+  const avatarEmojiChar = isAvatarEmoji ? photoUri?.replace('avatar:', '') : null;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -163,7 +235,16 @@ export default function SettingsScreen() {
             {/* Avatar Row */}
             <View style={styles.avatarSection}>
               <View style={styles.avatarWrapper}>
-                {photoUri ? (
+                {isAvatarEmoji ? (
+                  <View
+                    style={[
+                      styles.largeAvatarPlaceholder,
+                      { backgroundColor: isDark ? '#3A231C' : '#FBECE8' },
+                    ]}
+                  >
+                    <Text style={styles.largeAvatarEmoji}>{avatarEmojiChar}</Text>
+                  </View>
+                ) : photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.largeAvatarImage} />
                 ) : (
                   <View
@@ -178,11 +259,12 @@ export default function SettingsScreen() {
                   </View>
                 )}
 
+                {/* Camera badge trigger */}
                 <TouchableOpacity
                   style={[styles.cameraBadge, { backgroundColor: colors.primary }]}
-                  onPress={() => setIsPhotoModalVisible(true)}
+                  onPress={openSheet}
                   activeOpacity={0.8}
-                  accessibilityLabel="Upload profile photo"
+                  accessibilityLabel="Edit profile photo"
                 >
                   <Text style={styles.cameraBadgeIcon}>📷</Text>
                 </TouchableOpacity>
@@ -191,17 +273,17 @@ export default function SettingsScreen() {
               <View style={styles.avatarActionContainer}>
                 <TouchableOpacity
                   style={[
-                    styles.uploadPhotoButton,
+                    styles.editPhotoButton,
                     {
                       borderColor: colors.primary,
                       backgroundColor: isDark ? '#38251E' : '#FBF0EC',
                     },
                   ]}
-                  onPress={() => setIsPhotoModalVisible(true)}
+                  onPress={openSheet}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.uploadPhotoText, { color: colors.primary }]}>
-                    {photoUri ? 'Change Profile Photo' : 'Upload Profile Photo'}
+                  <Text style={[styles.editPhotoText, { color: colors.primary }]}>
+                    {photoUri ? 'Edit Profile Photo' : 'Upload Profile Photo'}
                   </Text>
                 </TouchableOpacity>
 
@@ -212,7 +294,7 @@ export default function SettingsScreen() {
                     activeOpacity={0.6}
                   >
                     <Text style={[styles.removePhotoText, { color: colors.textMuted }]}>
-                      Remove Photo
+                      Remove Photo / Avatar
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -251,10 +333,10 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     style={[styles.saveNameButton, { backgroundColor: colors.primary }]}
                     onPress={handleSaveName}
-                    disabled={isSaving}
+                    disabled={isSavingName}
                     activeOpacity={0.8}
                   >
-                    {isSaving ? (
+                    {isSavingName ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
                       <Text style={styles.saveNameButtonText}>Save</Text>
@@ -362,61 +444,262 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Profile Photo Preset Modal */}
+      {/* Elegant Bottom Sheet for Photo & Avatar Selection */}
       <Modal
-        visible={isPhotoModalVisible}
+        visible={isSheetVisible}
         transparent
-        animationType="fade"
-        onRequestClose={() => setIsPhotoModalVisible(false)}
+        animationType="slide"
+        onRequestClose={() => setIsSheetVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.sheetOverlay}
+          activeOpacity={1}
+          onPress={() => setIsSheetVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
-              styles.modalCard,
+              styles.bottomSheetContainer,
               {
                 backgroundColor: colors.card,
-                borderColor: colors.cardBorder,
+                borderTopColor: colors.border,
               },
             ]}
           >
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-              Select Profile Photo
-            </Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-              Choose an aesthetic portrait to represent your skin diary profile
-            </Text>
+            {/* Sheet Handle Indicator */}
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
 
-            <View style={styles.presetGrid}>
-              {MOCK_PHOTO_PRESETS.map(preset => (
+            {sheetView === 'menu' ? (
+              /* Main Menu: Choose Avatar | Choose from Gallery | Take a Photo */
+              <View style={styles.sheetMenuContent}>
+                <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
+                  Edit Profile Photo
+                </Text>
+                <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
+                  Personalize how you appear in your daily rituals
+                </Text>
+
+                <View style={styles.sheetOptionsGroup}>
+                  {/* Option 1: Choose Avatar */}
+                  <TouchableOpacity
+                    style={[
+                      styles.sheetOptionButton,
+                      {
+                        backgroundColor: isDark ? '#262320' : '#FAF8F5',
+                        borderColor: colors.cardBorder,
+                      },
+                    ]}
+                    onPress={() => setSheetView('avatars')}
+                    activeOpacity={0.75}
+                  >
+                    <View
+                      style={[
+                        styles.sheetOptionIconCircle,
+                        { backgroundColor: isDark ? '#3A2E26' : '#F5EBE6' },
+                      ]}
+                    >
+                      <Text style={styles.sheetOptionEmoji}>🌿</Text>
+                    </View>
+                    <View style={styles.sheetOptionTextContainer}>
+                      <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
+                        Choose Cute Avatar
+                      </Text>
+                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                        Pick a minimalist aesthetic skin ritual icon
+                      </Text>
+                    </View>
+                    <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
+                  </TouchableOpacity>
+
+                  {/* Option 2: Choose from Gallery */}
+                  <TouchableOpacity
+                    style={[
+                      styles.sheetOptionButton,
+                      {
+                        backgroundColor: isDark ? '#262320' : '#FAF8F5',
+                        borderColor: colors.cardBorder,
+                      },
+                    ]}
+                    onPress={handleChooseFromGallery}
+                    activeOpacity={0.75}
+                  >
+                    <View
+                      style={[
+                        styles.sheetOptionIconCircle,
+                        { backgroundColor: isDark ? '#263328' : '#EEF5F0' },
+                      ]}
+                    >
+                      <Text style={styles.sheetOptionEmoji}>🖼️</Text>
+                    </View>
+                    <View style={styles.sheetOptionTextContainer}>
+                      <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
+                        Choose from Gallery
+                      </Text>
+                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                        Select a portrait from your photo library
+                      </Text>
+                    </View>
+                    <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
+                  </TouchableOpacity>
+
+                  {/* Option 3: Take a Photo */}
+                  <TouchableOpacity
+                    style={[
+                      styles.sheetOptionButton,
+                      {
+                        backgroundColor: isDark ? '#262320' : '#FAF8F5',
+                        borderColor: colors.cardBorder,
+                      },
+                    ]}
+                    onPress={handleTakePhoto}
+                    activeOpacity={0.75}
+                  >
+                    <View
+                      style={[
+                        styles.sheetOptionIconCircle,
+                        { backgroundColor: isDark ? '#3A2E26' : '#FAF0EC' },
+                      ]}
+                    >
+                      <Text style={styles.sheetOptionEmoji}>📸</Text>
+                    </View>
+                    <View style={styles.sheetOptionTextContainer}>
+                      <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
+                        Take a Photo
+                      </Text>
+                      <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                        Capture a fresh photo with your camera
+                      </Text>
+                    </View>
+                    <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
+                  </TouchableOpacity>
+
+                  {/* Option 4: Remove current photo if exists */}
+                  {photoUri ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.sheetOptionButton,
+                        {
+                          backgroundColor: isDark ? '#2D1B18' : '#FDF4F2',
+                          borderColor: isDark ? '#4A2722' : '#F5D5CF',
+                        },
+                      ]}
+                      onPress={handleRemovePhoto}
+                      activeOpacity={0.75}
+                    >
+                      <View
+                        style={[
+                          styles.sheetOptionIconCircle,
+                          { backgroundColor: isDark ? '#4A2722' : '#F8E0DC' },
+                        ]}
+                      >
+                        <Text style={styles.sheetOptionEmoji}>✕</Text>
+                      </View>
+                      <View style={styles.sheetOptionTextContainer}>
+                        <Text style={[styles.sheetOptionTitle, { color: colors.primary }]}>
+                          Remove Current Photo
+                        </Text>
+                        <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
+                          Reset back to your name initials
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {/* Cancel Button */}
                 <TouchableOpacity
-                  key={preset.id}
                   style={[
-                    styles.presetItem,
-                    photoUri === preset.uri && { borderColor: colors.primary, borderWidth: 2 },
+                    styles.sheetCancelButton,
+                    { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
                   ]}
-                  onPress={() => handleSelectPhoto(preset.uri)}
-                  activeOpacity={0.8}
+                  onPress={() => setIsSheetVisible(false)}
+                  activeOpacity={0.7}
                 >
-                  <Image source={{ uri: preset.uri }} style={styles.presetImage} />
-                  <Text style={[styles.presetLabel, { color: colors.textPrimary }]}>
-                    {preset.label}
+                  <Text style={[styles.sheetCancelText, { color: colors.textPrimary }]}>
+                    Cancel
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
+            ) : (
+              /* Cute Avatars Grid */
+              <View style={styles.sheetMenuContent}>
+                <View style={styles.avatarHeaderRow}>
+                  <TouchableOpacity
+                    onPress={() => setSheetView('menu')}
+                    style={[
+                      styles.avatarBackBtn,
+                      { borderColor: isDark ? '#3D3A37' : '#E8E3DC' },
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.avatarBackText, { color: colors.textPrimary }]}>
+                      ← Back
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.sheetTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
+                    Cute Avatars
+                  </Text>
+                  <View style={{ width: 60 }} />
+                </View>
 
-            <TouchableOpacity
-              style={[
-                styles.modalCancelButton,
-                { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
-              ]}
-              onPress={() => setIsPhotoModalVisible(false)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.modalCancelText, { color: colors.textPrimary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+                <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
+                  Tap any cute aesthetic icon to set as your profile avatar
+                </Text>
+
+                <View style={styles.cuteAvatarGrid}>
+                  {CUTE_AVATARS.map(item => {
+                    const isSelected = photoUri === `avatar:${item.emoji}`;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[
+                          styles.cuteAvatarCard,
+                          {
+                            backgroundColor: isSelected
+                              ? isDark ? '#3D2821' : colors.primaryLight
+                              : isDark ? '#23201D' : '#FAF8F5',
+                            borderColor: isSelected
+                              ? colors.primary
+                              : colors.cardBorder,
+                          },
+                        ]}
+                        onPress={() => handleSelectCuteAvatar(item.emoji)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={styles.cuteAvatarEmoji}>{item.emoji}</Text>
+                        <Text
+                          style={[
+                            styles.cuteAvatarLabel,
+                            {
+                              color: isSelected ? colors.primary : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Cancel Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.sheetCancelButton,
+                    { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
+                  ]}
+                  onPress={() => setIsSheetVisible(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.sheetCancelText, { color: colors.textPrimary }]}>
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -492,6 +775,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
   },
+  largeAvatarEmoji: {
+    fontSize: 38,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
   cameraBadge: {
     position: 'absolute',
     bottom: -2,
@@ -511,14 +799,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
-  uploadPhotoButton: {
-    paddingVertical: 8,
+  editPhotoButton: {
+    paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
     alignItems: 'center',
   },
-  uploadPhotoText: {
+  editPhotoText: {
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.2,
@@ -645,66 +933,128 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  modalOverlay: {
+  sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: SPACING.lg,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'flex-end',
   },
-  modalCard: {
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
+  bottomSheetContainer: {
+    borderTopLeftRadius: RADIUS.lg,
+    borderTopRightRadius: RADIUS.lg,
+    borderTopWidth: 1,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingHorizontal: SPACING.lg,
+    maxHeight: '85%',
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetMenuContent: {
+    paddingBottom: 4,
+  },
+  avatarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  avatarBackBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
   },
-  modalTitle: {
+  avatarBackText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sheetTitle: {
     fontSize: 17,
     fontWeight: '700',
-    marginBottom: 4,
     textAlign: 'center',
+    marginBottom: 4,
   },
-  modalSubtitle: {
+  sheetSubtitle: {
     fontSize: 12,
     textAlign: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
   },
-  presetGrid: {
+  sheetOptionsGroup: {
+    gap: 10,
+    marginBottom: SPACING.lg,
+  },
+  sheetOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+  },
+  sheetOptionIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  sheetOptionEmoji: {
+    fontSize: 20,
+  },
+  sheetOptionTextContainer: {
+    flex: 1,
+  },
+  sheetOptionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  sheetOptionDesc: {
+    fontSize: 11,
+  },
+  sheetChevron: {
+    fontSize: 20,
+    fontWeight: '400',
+    marginLeft: 8,
+  },
+  sheetCancelButton: {
+    height: 46,
+    borderRadius: RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cuteAvatarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
     marginBottom: SPACING.lg,
   },
-  presetItem: {
-    width: '47%',
-    alignItems: 'center',
+  cuteAvatarCard: {
+    width: '23%',
+    aspectRatio: 1,
     borderRadius: RADIUS.md,
-    padding: 8,
     borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  presetImage: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    marginBottom: 6,
-  },
-  presetLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  modalCancelButton: {
-    height: 44,
-    borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 4,
   },
-  modalCancelText: {
-    fontSize: 13,
-    fontWeight: '600',
+  cuteAvatarEmoji: {
+    fontSize: 28,
+    marginBottom: 4,
+    includeFontPadding: false,
+  },
+  cuteAvatarLabel: {
+    fontSize: 9,
+    textAlign: 'center',
   },
 });

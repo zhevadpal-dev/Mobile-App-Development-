@@ -71,7 +71,11 @@ export default function TabNavigator() {
             activeOpacity={0.7}
             accessibilityLabel="Open settings and profile"
           >
-            {user?.photoUri ? (
+            {user?.photoUri?.startsWith('avatar:') ? (
+              <Text style={styles.avatarEmojiText}>
+                {user.photoUri.replace('avatar:', '')}
+              </Text>
+            ) : user?.photoUri ? (
               <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
             ) : (
               <Text style={[styles.avatarText, { color: colors.primary }]}>{userInitial}</Text>
@@ -168,5 +172,10 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  avatarEmojiText: {
+    fontSize: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 });
