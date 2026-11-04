@@ -4,35 +4,57 @@
 export type ProductCategory =
   | 'cleanser'
   | 'toner'
-  | 'essence'
   | 'serum'
-  | 'eye_cream'
   | 'moisturizer'
-  | 'facial_oil'
   | 'sunscreen'
+  | 'masks_treatments'
+  | 'essence'
+  | 'eye_cream'
+  | 'facial_oil'
   | 'exfoliant'
   | 'mask'
   | 'treatment'
   | 'other';
 
 /**
- * Standard application order weights (1 = thinnest/first, 8+ = thickest/last)
- * Used to automatically order products in routine checklists
+ * Standard application order weights (thinnest to thickest)
+ * Cleanser (1) -> Toner (2) -> Serum (3) -> Moisturizer (4) -> Sunscreen (5) -> Masks & Treatments (6)
  */
 export const CATEGORY_ORDER_WEIGHTS: Record<ProductCategory, number> = {
   cleanser: 1,
   toner: 2,
-  essence: 3,
-  serum: 4,
-  eye_cream: 5,
-  moisturizer: 6,
-  facial_oil: 7,
-  sunscreen: 8,
-  exfoliant: 3,
-  treatment: 4,
-  mask: 5,
-  other: 9,
+  essence: 2.5,
+  serum: 3,
+  eye_cream: 3.5,
+  moisturizer: 4,
+  facial_oil: 4.5,
+  sunscreen: 5,
+  masks_treatments: 6,
+  mask: 6,
+  treatment: 6,
+  exfoliant: 2.5,
+  other: 7,
 };
+
+/**
+ * Available categories in Cabinet UI
+ */
+export interface CategoryDefinition {
+  key: ProductCategory;
+  label: string;
+  orderWeight: number;
+  icon: string;
+  shortDescription: string;
+}
+
+export const PRIMARY_CATEGORIES: CategoryDefinition[] = [
+  { key: 'cleanser', label: 'Cleanser', orderWeight: 1, icon: '🫧', shortDescription: 'Step 1 • Water/Gel wash' },
+  { key: 'toner', label: 'Toner', orderWeight: 2, icon: '💧', shortDescription: 'Step 2 • Watery mist/liquid' },
+  { key: 'serum', label: 'Serum', orderWeight: 3, icon: '🧪', shortDescription: 'Step 3 • Lightweight active' },
+  { key: 'moisturizer', label: 'Moisturizer', orderWeight: 4, icon: '🧴', shortDescription: 'Step 4 • Cream/Emulsion' },
+  { key: 'sunscreen', label: 'Sunscreen', orderWeight: 5, icon: '☀️', shortDescription: 'Step 5 • UV protection shield' },
+  { key: 'masks_treatments', label: 'Masks & Treatments', orderWeight: 6, icon: '✨', shortDescription: 'Special care & overnight mask' },
+];
 
 /**
  * Routine allocation options
@@ -55,7 +77,7 @@ export interface Product {
   brand?: string;
   /** Which routine(s) this product belongs to */
   routineType?: RoutineType;
-  /** Numerical order weight (1: thinnest -> 8+: thickest) */
+  /** Numerical order weight (1: thinnest -> 6: thickest/special) */
   orderWeight?: number;
   /** Period After Opening (PAO) in months before expiry (e.g., 6, 12) */
   periodAfterOpeningMonths?: number;

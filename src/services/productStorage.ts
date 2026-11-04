@@ -22,9 +22,17 @@ const resolveOrderWeight = (category: string, explicitWeight?: number): number =
   if (typeof explicitWeight === 'number' && !isNaN(explicitWeight)) {
     return explicitWeight;
   }
-  const normalized = category.toLowerCase().trim() as ProductCategory;
-  return CATEGORY_ORDER_WEIGHTS[normalized] ?? 9;
+  const clean = category.toLowerCase().trim();
+  if (clean.includes('cleanse')) return 1;
+  if (clean.includes('tone')) return 2;
+  if (clean.includes('serum')) return 3;
+  if (clean.includes('moistur')) return 4;
+  if (clean.includes('sun') || clean.includes('spf')) return 5;
+  if (clean.includes('mask') || clean.includes('treat')) return 6;
+  const normalized = clean as ProductCategory;
+  return CATEGORY_ORDER_WEIGHTS[normalized] ?? 7;
 };
+
 
 /**
  * Retrieve all products from AsyncStorage
