@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   SafeAreaView,
+  Dimensions,
   useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
@@ -59,7 +60,10 @@ const SLIDES: OnboardingSlide[] = [
 ];
 
 export default function OnboardingScreen({ navigation }: Props) {
-  const { width } = useWindowDimensions();
+  // Guarantee exact device screen width matching Dimensions.get('window').width
+  const { width: windowWidth } = useWindowDimensions();
+  const screenWidth = windowWidth > 0 ? windowWidth : Dimensions.get('window').width;
+
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
 
@@ -68,7 +72,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollOffset = event.nativeEvent.contentOffset.x;
-    const pageIndex = Math.round(scrollOffset / width);
+    const pageIndex = Math.round(scrollOffset / screenWidth);
     if (pageIndex !== currentIndex && pageIndex >= 0 && pageIndex < SLIDES.length) {
       setCurrentIndex(pageIndex);
     }
@@ -77,7 +81,10 @@ export default function OnboardingScreen({ navigation }: Props) {
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      flatListRef.current?.scrollToOffset({
+        offset: nextIndex * screenWidth,
+        animated: true,
+      });
       setCurrentIndex(nextIndex);
     } else {
       navigation.navigate('Login');
@@ -90,30 +97,56 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const isLastSlide = currentIndex === SLIDES.length - 1;
   const currentSlide = SLIDES[currentIndex];
-  const activeColor =
-    currentSlide.accentColor === 'sage' ? colors.secondary : colors.primary;
+  const activeColor = isDark
+    ? currentSlide.accentColor === 'sage'
+      ? '#A8D5AD'
+      : '#F2A796'
+    : currentSlide.accentColor === 'sage'
+    ? colors.secondary
+    : colors.primary;
 
   const renderSlide = ({ item }: { item: OnboardingSlide }) => {
     const isSage = item.accentColor === 'sage';
-    const iconColor = isSage ? colors.secondary : colors.primary;
-    const badgeBg = isSage
-      ? isDark
+
+    // Explicit high-contrast icon color (soft cream #FAF8F5 or sage #A8D5AD in dark mode)
+    const iconColor = isDark
+      ? isSage
+        ? '#A8D5AD'
+        : '#FAF8F5'
+      : isSage
+      ? colors.secondary
+      : colors.primary;
+
+    const badgeBg = isDark
+      ? isSage
         ? '#1D2A20'
-        : colors.secondaryLight
-      : isDark
-      ? '#3A231C'
+        : '#2C211D'
+      : isSage
+      ? colors.secondaryLight
       : colors.primaryLight;
-    const ringBorder = isSage
-      ? isDark
-        ? '#2E4333'
-        : '#CFE3D5'
-      : isDark
-      ? '#543229'
+
+    const ringBorder = isDark
+      ? isSage
+        ? '#334D38'
+        : '#56342B'
+      : isSage
+      ? '#CFE3D5'
       : '#F4D4CC';
 
+    // Explicit high-contrast readable text colors for dark & light backgrounds
+    const titleColor = isDark ? '#FFFFFF' : colors.textPrimary;
+    const subtitleColor = isDark ? '#EAE6E1' : colors.textSecondary;
+    const eyebrowColor = isDark
+      ? isSage
+        ? '#A8D5AD'
+        : '#F2A796'
+      : isSage
+      ? '#5C8561'
+      : colors.primary;
+
     return (
-      <View style={[styles.slideContainer, { width }]}>
-        {/* Medallion Icon Display */}
+      <View style={[styles.slideContainer, { width: screenWidth }]}>
+        {/* Medallion Icon Display with Perfect Centering */}
         <View style={styles.medallionWrapper}>
           <View style={[styles.outerRing, { borderColor: ringBorder }]}>
             <View
@@ -121,26 +154,26 @@ export default function OnboardingScreen({ navigation }: Props) {
                 styles.iconBadge,
                 {
                   backgroundColor: badgeBg,
-                  borderColor: isDark ? '#3D3630' : '#EDE8E0',
+                  borderColor: isDark ? '#3D332D' : '#EDE8E0',
                 },
               ]}
             >
-              <Ionicons name={item.iconName} size={62} color={iconColor} />
+              <Ionicons name={item.iconName} size={64} color={iconColor} />
             </View>
           </View>
         </View>
 
-        {/* Text Details */}
+        {/* Text Details with Guaranteed Contrast */}
         <View style={styles.textContent}>
-          <Text style={[styles.stepEyebrow, { color: iconColor }]}>
+          <Text style={[styles.stepEyebrow, { color: eyebrowColor }]}>
             {item.stepEyebrow}
           </Text>
 
-          <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>
+          <Text style={[styles.slideTitle, { color: titleColor }]}>
             {t(item.titleKey)}
           </Text>
 
-          <Text style={[styles.slideSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.slideSubtitle, { color: subtitleColor }]}>
             {t(item.subtitleKey)}
           </Text>
         </View>
@@ -162,7 +195,12 @@ export default function OnboardingScreen({ navigation }: Props) {
             hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             accessibilityLabel="Skip onboarding"
           >
-            <Text style={[styles.skipButtonText, { color: colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.skipButtonText,
+                { color: isDark ? '#D6D1CA' : colors.textSecondary },
+              ]}
+            >
               {t('onboardingSkip')}
             </Text>
           </TouchableOpacity>
@@ -171,7 +209,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         )}
       </View>
 
-      {/* Swipable Carousel */}
+      {/* Swipable Carousel with Pixel-Exact Layout */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -181,10 +219,13 @@ export default function OnboardingScreen({ navigation }: Props) {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         bounces={false}
+        decelerationRate="fast"
+        snapToInterval={screenWidth}
+        snapToAlignment="start"
         onMomentumScrollEnd={handleScroll}
         getItemLayout={(_, index) => ({
-          length: width,
-          offset: width * index,
+          length: screenWidth,
+          offset: screenWidth * index,
           index,
         })}
         style={styles.flatList}
@@ -197,14 +238,22 @@ export default function OnboardingScreen({ navigation }: Props) {
         <View style={styles.paginationRow}>
           {SLIDES.map((slide, idx) => {
             const isActive = idx === currentIndex;
-            const dotColor =
-              slide.accentColor === 'sage' ? colors.secondary : colors.primary;
+            const dotColor = isDark
+              ? slide.accentColor === 'sage'
+                ? '#A8D5AD'
+                : '#F2A796'
+              : slide.accentColor === 'sage'
+              ? colors.secondary
+              : colors.primary;
 
             return (
               <TouchableOpacity
                 key={slide.id}
                 onPress={() => {
-                  flatListRef.current?.scrollToIndex({ index: idx, animated: true });
+                  flatListRef.current?.scrollToOffset({
+                    offset: idx * screenWidth,
+                    animated: true,
+                  });
                   setCurrentIndex(idx);
                 }}
                 activeOpacity={0.8}
@@ -311,10 +360,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   flatListContent: {
-    alignItems: 'center',
+    height: '100%',
   },
+  // Item container: fixed to exact screen width, no horizontal flex shrink/grow conflicts
   slideContainer: {
-    flex: 1,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.xl,
@@ -342,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 3,
   },
