@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import {
@@ -184,6 +185,13 @@ export default function DiaryScreen() {
     loadLogs();
   }, [loadLogs]);
 
+  // Keep logs synchronized whenever the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadLogs();
+    }, [loadLogs])
+  );
+
   /**
    * Automatically center calendar strip on Today on mount
    */
@@ -325,7 +333,12 @@ export default function DiaryScreen() {
                 const isSelected = selectedDate === item.dateString;
                 const dayLogs = logsByDate[item.dateString];
                 const hasLog = Boolean(dayLogs && dayLogs.length > 0);
-                const loggedEmoji = dayLogs?.[0]?.emoji;
+                const loggedEntry = dayLogs?.[0];
+                const loggedEmoji =
+                  loggedEntry?.emoji ||
+                  (loggedEntry?.condition
+                    ? SKIN_CONDITIONS.find(c => c.key === loggedEntry.condition)?.emoji
+                    : undefined);
 
                 return (
                   <TouchableOpacity
@@ -378,19 +391,12 @@ export default function DiaryScreen() {
                       {item.dayNumber}
                     </Text>
 
-                    {/* Indicator Area (Logged Emoji or Subtle Dot) */}
-                    <View style={styles.indicatorContainer}>
-                      {hasLog ? (
-                        <Text style={styles.loggedEmojiIndicator}>{loggedEmoji}</Text>
-                      ) : item.isToday ? (
-                        <View
-                          style={[
-                            styles.todayDot,
-                            { backgroundColor: colors.secondary },
-                          ]}
-                        />
+                    {/* Mini-Emoji Indicator directly below the date number */}
+                    <View style={styles.miniIndicatorContainer}>
+                      {hasLog && loggedEmoji ? (
+                        <Text style={styles.miniEmojiIcon}>{loggedEmoji}</Text>
                       ) : (
-                        <View style={styles.emptyIndicatorDot} />
+                        <View style={styles.miniIndicatorSpacer} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -782,24 +788,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
   },
-  indicatorContainer: {
-    height: 18,
+  miniIndicatorContainer: {
+    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 2,
   },
-  loggedEmojiIndicator: {
-    fontSize: 13,
+  miniEmojiIcon: {
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
-  todayDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  emptyIndicatorDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0,
+  miniIndicatorSpacer: {
+    width: 14,
+    height: 14,
   },
   insightCard: {
     borderRadius: RADIUS.md,
