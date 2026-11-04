@@ -45,12 +45,9 @@ export default function TabNavigator() {
           shadowOpacity: 0,
         },
         headerTitle: () => (
-          <View style={styles.headerTitleContainer}>
-            <Text style={[styles.headerTitleText, { color: colors.textPrimary }]}>
-              Skin Diary
-            </Text>
-            <Text style={styles.headerSubtitleText}>🧴✨</Text>
-          </View>
+          <Text style={[styles.headerTitleText, { color: colors.textPrimary }]}>
+            Skin Diary
+          </Text>
         ),
         headerRight: () => <ThemeToggle />,
         headerRightContainerStyle: {
@@ -97,18 +94,10 @@ export default function TabNavigator() {
 }
 
 const styles = StyleSheet.create({
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   headerTitleText: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  headerSubtitleText: {
-    fontSize: 16,
+    fontSize: 20,
+    fontWeight: '300',
+    letterSpacing: 1.5,
   },
   tabBar: {
     borderTopWidth: 1,
