@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import ThemeToggle from '../components/ThemeToggle';
 import { SPACING, RADIUS } from '../constants/theme';
 
@@ -23,6 +24,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 export default function SignUpScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const { signUp } = useAuth();
+  const { t } = useLanguage();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -35,15 +37,15 @@ export default function SignUpScreen({ navigation }: Props) {
   const handleSignUp = async () => {
     setErrorMessage(null);
     if (!name.trim()) {
-      setErrorMessage('Please enter your name.');
+      setErrorMessage(t('errorEnterName'));
       return;
     }
     if (!email.trim()) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage(t('errorEnterEmail'));
       return;
     }
     if (!password || password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
+      setErrorMessage(t('errorPasswordMin'));
       return;
     }
 
@@ -55,7 +57,7 @@ export default function SignUpScreen({ navigation }: Props) {
         password,
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Could not complete registration. Please try again.');
+      setErrorMessage(error?.message || t('errorSignUpFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,16 +87,16 @@ export default function SignUpScreen({ navigation }: Props) {
                 activeOpacity={0.7}
                 accessibilityLabel="Back to log in"
               >
-                <Text style={[styles.backButtonText, { color: colors.textPrimary }]}>← Back</Text>
+                <Text style={[styles.backButtonText, { color: colors.textPrimary }]}>← {t('back')}</Text>
               </TouchableOpacity>
               <ThemeToggle />
             </View>
 
             {/* Hero Branding */}
             <View style={styles.heroSection}>
-              <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>Create Account</Text>
+              <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>{t('createAccount')}</Text>
               <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-                Begin your personalized, mindful skin ritual
+                {t('signUpSubtitle')}
               </Text>
             </View>
 
@@ -117,7 +119,7 @@ export default function SignUpScreen({ navigation }: Props) {
             <View style={styles.formContainer}>
               {/* Name Field */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>YOUR NAME</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('yourName')}</Text>
                 <TextInput
                   style={[
                     styles.textInput,
@@ -128,7 +130,7 @@ export default function SignUpScreen({ navigation }: Props) {
                       color: colors.textPrimary,
                     },
                   ]}
-                  placeholder="e.g. Zeynep"
+                  placeholder={t('namePlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={name}
                   onChangeText={text => {
@@ -144,7 +146,7 @@ export default function SignUpScreen({ navigation }: Props) {
 
               {/* Email Field */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>EMAIL ADDRESS</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('emailAddress')}</Text>
                 <TextInput
                   style={[
                     styles.textInput,
@@ -155,7 +157,7 @@ export default function SignUpScreen({ navigation }: Props) {
                       color: colors.textPrimary,
                     },
                   ]}
-                  placeholder="name@example.com"
+                  placeholder={t('emailPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={email}
                   onChangeText={text => {
@@ -173,8 +175,8 @@ export default function SignUpScreen({ navigation }: Props) {
               {/* Password Field */}
               <View style={styles.inputGroup}>
                 <View style={styles.labelRow}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>PASSWORD</Text>
-                  <Text style={[styles.hintText, { color: colors.textMuted }]}>min. 6 characters</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('password')}</Text>
+                  <Text style={[styles.hintText, { color: colors.textMuted }]}>{t('minCharacters')}</Text>
                 </View>
                 <View
                   style={[
@@ -188,7 +190,7 @@ export default function SignUpScreen({ navigation }: Props) {
                 >
                   <TextInput
                     style={[styles.passwordTextInput, { color: colors.textPrimary }]}
-                    placeholder="••••••••"
+                    placeholder={t('passwordPlaceholder')}
                     placeholderTextColor={colors.textMuted}
                     value={password}
                     onChangeText={text => {
@@ -208,7 +210,7 @@ export default function SignUpScreen({ navigation }: Props) {
                     accessibilityLabel="Toggle password visibility"
                   >
                     <Text style={[styles.eyeText, { color: colors.textMuted }]}>
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showPassword ? t('hide') : t('show')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -228,7 +230,7 @@ export default function SignUpScreen({ navigation }: Props) {
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.primaryButtonText}>Create Account</Text>
+                  <Text style={styles.primaryButtonText}>{t('createAccount')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -246,8 +248,8 @@ export default function SignUpScreen({ navigation }: Props) {
               hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             >
               <Text style={[styles.switchAuthText, { color: colors.textSecondary }]}>
-                Already have an account?{' '}
-                <Text style={[styles.switchAuthLink, { color: colors.primary }]}>Log In</Text>
+                {t('alreadyHaveAccount')}{' '}
+                <Text style={[styles.switchAuthLink, { color: colors.primary }]}>{t('logIn')}</Text>
               </Text>
             </TouchableOpacity>
           </View>

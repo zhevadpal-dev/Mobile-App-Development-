@@ -15,6 +15,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
 import {
   SkinConditionType,
@@ -38,9 +39,43 @@ interface CalendarDayItem {
 }
 
 /**
- * Format date for human-readable display
+ * Localized month name helper
  */
-const formatLogDisplayDate = (dateStr: string): string => {
+const getLocalizedMonthName = (
+  monthIndex: number,
+  t: (k: TranslationKey) => string,
+  full = false
+): string => {
+  const shortKeys: TranslationKey[] = [
+    'monthJan', 'monthFeb', 'monthMar', 'monthApr', 'monthMay', 'monthJun',
+    'monthJul', 'monthAug', 'monthSep', 'monthOct', 'monthNov', 'monthDec'
+  ];
+  const fullKeys: TranslationKey[] = [
+    'monthJanFull', 'monthFebFull', 'monthMarFull', 'monthAprFull', 'monthMayFull', 'monthJunFull',
+    'monthJulFull', 'monthAugFull', 'monthSepFull', 'monthOctFull', 'monthNovFull', 'monthDecFull'
+  ];
+  const safeIdx = Math.max(0, Math.min(11, monthIndex));
+  return t(full ? fullKeys[safeIdx] : shortKeys[safeIdx]);
+};
+
+/**
+ * Localized day of week name helper
+ */
+const getLocalizedDayName = (
+  dayOfWeek: number,
+  t: (k: TranslationKey) => string
+): string => {
+  const dayKeys: TranslationKey[] = [
+    'daySun', 'dayMon', 'dayTue', 'dayWed', 'dayThu', 'dayFri', 'daySat'
+  ];
+  const safeIdx = Math.max(0, Math.min(6, dayOfWeek));
+  return t(dayKeys[safeIdx]);
+};
+
+/**
+ * Format date for human-readable display with translations
+ */
+const formatLogDisplayDate = (dateStr: string, t: (k: TranslationKey) => string): string => {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
     now.getDate()
@@ -54,30 +89,91 @@ const formatLogDisplayDate = (dateStr: string): string => {
   )}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
   if (dateStr === todayStr) {
-    return 'Today';
+    return t('today');
   }
   if (dateStr === yesterdayStr) {
-    return 'Yesterday';
+    return t('yesterday');
   }
 
   try {
     const parts = dateStr.split('-');
     if (parts.length === 3) {
-      const monthNames = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ];
       const monthIndex = parseInt(parts[1], 10) - 1;
       const day = parseInt(parts[2], 10);
       const year = parts[0];
       if (monthIndex >= 0 && monthIndex < 12 && !isNaN(day)) {
-        return `${monthNames[monthIndex]} ${day}, ${year}`;
+        return `${getLocalizedMonthName(monthIndex, t, false)} ${day}, ${year}`;
       }
     }
   } catch {
     // fallback
   }
   return dateStr;
+};
+
+/**
+ * Resolve localized condition options and smart tips
+ */
+export const getConditionMeta = (
+  key: SkinConditionType | string | undefined,
+  t: (k: TranslationKey) => string
+): SkinConditionOption => {
+  switch (key) {
+    case 'glowing':
+      return {
+        key: 'glowing',
+        emoji: '✨',
+        label: t('condGlowingLabel'),
+        tipTitle: t('condGlowingTipTitle'),
+        tipDescription: t('condGlowingTipDesc'),
+        recommendedAction: t('condGlowingAction'),
+      };
+    case 'hydrated':
+      return {
+        key: 'hydrated',
+        emoji: '💧',
+        label: t('condHydratedLabel'),
+        tipTitle: t('condHydratedTipTitle'),
+        tipDescription: t('condHydratedTipDesc'),
+        recommendedAction: t('condHydratedAction'),
+      };
+    case 'dry':
+      return {
+        key: 'dry',
+        emoji: '🌵',
+        label: t('condDryLabel'),
+        tipTitle: t('condDryTipTitle'),
+        tipDescription: t('condDryTipDesc'),
+        recommendedAction: t('condDryAction'),
+      };
+    case 'sensitive':
+      return {
+        key: 'sensitive',
+        emoji: '🌸',
+        label: t('condSensitiveLabel'),
+        tipTitle: t('condSensitiveTipTitle'),
+        tipDescription: t('condSensitiveTipDesc'),
+        recommendedAction: t('condSensitiveAction'),
+      };
+    case 'breakout':
+      return {
+        key: 'breakout',
+        emoji: '🩹',
+        label: t('condBreakoutLabel'),
+        tipTitle: t('condBreakoutTipTitle'),
+        tipDescription: t('condBreakoutTipDesc'),
+        recommendedAction: t('condBreakoutAction'),
+      };
+    default:
+      return {
+        key: 'hydrated',
+        emoji: '💧',
+        label: t('condHydratedLabel'),
+        tipTitle: t('condHydratedTipTitle'),
+        tipDescription: t('condHydratedTipDesc'),
+        recommendedAction: t('condHydratedAction'),
+      };
+  }
 };
 
 /**
@@ -94,8 +190,8 @@ const getTodayDateString = (): string => {
 /**
  * Generate rolling time-aware days centered on today
  */
-const generateRollingDays = (): CalendarDayItem[] => {
-  const days: CalendarDayItem[] = [];
+const generateRollingBaseDays = () => {
+  const base: { dateString: string; dateObj: Date; isToday: boolean; isFuture: boolean }[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -108,23 +204,14 @@ const generateRollingDays = (): CalendarDayItem[] => {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-    const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-    const dayNumber = d.getDate();
-    const isToday = i === 0;
-    const isFuture = i > 0;
-
-    days.push({
+    base.push({
       dateString,
-      dayName,
-      dayNumber,
-      monthName,
-      isToday,
-      isFuture,
+      dateObj: d,
+      isToday: i === 0,
+      isFuture: i > 0,
     });
   }
-  return days;
+  return base;
 };
 
 export default function DiaryScreen() {
@@ -135,8 +222,17 @@ export default function DiaryScreen() {
   // Today string
   const todayString = useMemo(() => getTodayDateString(), []);
 
-  // Time-aware calendar days
-  const calendarDays = useMemo(() => generateRollingDays(), []);
+  // Time-aware calendar days localized reactively
+  const calendarDays: CalendarDayItem[] = useMemo(() => {
+    return generateRollingBaseDays().map(item => ({
+      dateString: item.dateString,
+      dayName: getLocalizedDayName(item.dateObj.getDay(), t),
+      dayNumber: item.dateObj.getDate(),
+      monthName: getLocalizedMonthName(item.dateObj.getMonth(), t, false),
+      isToday: item.isToday,
+      isFuture: item.isFuture,
+    }));
+  }, [t]);
 
   // Selected date on calendar (defaults to today)
   const [selectedDate, setSelectedDate] = useState<string>(todayString);
@@ -148,9 +244,17 @@ export default function DiaryScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  // Active condition details for the check-in section
-  const activeCondition: SkinConditionOption =
-    SKIN_CONDITIONS.find(c => c.key === selectedConditionKey) || SKIN_CONDITIONS[0];
+  // Active condition details for the check-in section localized reactively
+  const activeCondition: SkinConditionOption = useMemo(
+    () => getConditionMeta(selectedConditionKey, t),
+    [selectedConditionKey, t]
+  );
+
+  // Localized conditions list for selection buttons
+  const localizedConditions: SkinConditionOption[] = useMemo(
+    () => SKIN_CONDITIONS.map(c => getConditionMeta(c.key, t)),
+    [t]
+  );
 
   // Group logs by date string
   const logsByDate = useMemo(() => {
@@ -230,12 +334,12 @@ export default function DiaryScreen() {
       setNote('');
       await loadLogs();
       Alert.alert(
-        'Skin Logged ✨',
-        `Recorded as ${activeCondition.label} for ${formatLogDisplayDate(date)}.`
+        'Skin Diary ✨',
+        `${activeCondition.label} • ${formatLogDisplayDate(date, t)}`
       );
     } catch (error) {
       console.error('Error saving skin log:', error);
-      Alert.alert('Save Error', 'Could not save your log. Please try again.');
+      Alert.alert('Error', 'Could not save your log. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -246,12 +350,12 @@ export default function DiaryScreen() {
    */
   const handleDeleteLog = (id: string, label: string, date: string) => {
     Alert.alert(
-      'Remove Entry',
-      `Delete ${label} entry from ${formatLogDisplayDate(date)}?`,
+      t('deleteEntryTitle'),
+      t('deleteEntryConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -266,17 +370,18 @@ export default function DiaryScreen() {
     );
   };
 
-  // Header month text from currently selected date
+  // Header month text from currently selected date localized reactively
   const selectedMonthText = useMemo(() => {
     try {
       const parts = selectedDate.split('-');
       if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        const year = parts[0];
+        return `${getLocalizedMonthName(monthIndex, t, true)} ${year}`;
       }
     } catch {}
-    return 'November 2026';
-  }, [selectedDate]);
+    return `${t('monthNovFull')} 2026`;
+  }, [selectedDate, t]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -285,11 +390,11 @@ export default function DiaryScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-          {/* Header */}
+          {/* Header (Brand Rule: Skin Diary remains strictly untranslated) */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>Skin Diary</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Track your skin history, discover tailored tips, and build consistent habits.
+              {t('diarySubtitle')}
             </Text>
           </View>
 
@@ -301,7 +406,7 @@ export default function DiaryScreen() {
                   {selectedMonthText}
                 </Text>
                 <Text style={[styles.calendarSubText, { color: colors.textSecondary }]}>
-                  Selected: {formatLogDisplayDate(selectedDate)}
+                  {t('selectedDateLabel')} {formatLogDisplayDate(selectedDate, t)}
                 </Text>
               </View>
 
@@ -423,10 +528,10 @@ export default function DiaryScreen() {
                   <Text style={styles.insightEmoji}>{selectedDayPrimaryLog.emoji}</Text>
                   <View>
                     <Text style={[styles.insightConditionTitle, { color: colors.textPrimary }]}>
-                      {selectedDayPrimaryLog.label}
+                      {getConditionMeta(selectedDayPrimaryLog.condition, t).label || selectedDayPrimaryLog.label}
                     </Text>
                     <Text style={[styles.insightDateText, { color: colors.textMuted }]}>
-                      {formatLogDisplayDate(selectedDayPrimaryLog.date)}{' '}
+                      {formatLogDisplayDate(selectedDayPrimaryLog.date, t)}{' '}
                       {selectedDayPrimaryLog.time ? `• ${selectedDayPrimaryLog.time}` : ''}
                     </Text>
                   </View>
@@ -436,7 +541,7 @@ export default function DiaryScreen() {
                   onPress={() =>
                     handleDeleteLog(
                       selectedDayPrimaryLog.id,
-                      selectedDayPrimaryLog.label,
+                      getConditionMeta(selectedDayPrimaryLog.condition, t).label || selectedDayPrimaryLog.label,
                       selectedDayPrimaryLog.date
                     )
                   }
@@ -459,10 +564,10 @@ export default function DiaryScreen() {
                 ]}
               >
                 <Text style={[styles.insightTipHeading, { color: colors.primary }]}>
-                  💡 {selectedDayPrimaryLog.tipTitle}
+                  💡 {getConditionMeta(selectedDayPrimaryLog.condition, t).tipTitle || selectedDayPrimaryLog.tipTitle}
                 </Text>
                 <Text style={[styles.insightTipBody, { color: colors.textSecondary }]}>
-                  {selectedDayPrimaryLog.tipDescription}
+                  {getConditionMeta(selectedDayPrimaryLog.condition, t).tipDescription || selectedDayPrimaryLog.tipDescription}
                 </Text>
               </View>
 
@@ -485,20 +590,22 @@ export default function DiaryScreen() {
             >
               <Text style={[styles.emptyDayNoticeText, { color: colors.textSecondary }]}>
                 {selectedDate === todayString
-                  ? 'No skin entry logged yet for today. Select how your skin feels below to record it.'
-                  : `No skin entry recorded for ${formatLogDisplayDate(selectedDate)}.`}
+                  ? t('startTrackingPrompt')
+                  : `${t('noEntryForDate')} ${formatLogDisplayDate(selectedDate, t)}.`}
               </Text>
             </View>
           )}
 
           {/* Daily Skin Check-In Section */}
           <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginTop: SPACING.md }]}>
-            How does your skin feel {selectedDate === todayString ? 'today' : `on ${formatLogDisplayDate(selectedDate)}`}?
+            {selectedDate === todayString
+              ? t('howDoesSkinFeel')
+              : `${t('howDoesSkinFeelOn')} ${formatLogDisplayDate(selectedDate, t)}`}
           </Text>
 
           {/* Minimal Emoji Buttons */}
           <View style={styles.emojiGrid}>
-            {SKIN_CONDITIONS.map(item => {
+            {localizedConditions.map(item => {
               const isSelected = selectedConditionKey === item.key;
               return (
                 <TouchableOpacity
@@ -552,7 +659,7 @@ export default function DiaryScreen() {
                 ]}
               >
                 <Text style={[styles.tipBadgeText, { color: colors.primary }]}>
-                  💡 Smart Skincare Tip
+                  💡 {t('smartTipBadge')}
                 </Text>
               </View>
               <Text style={styles.tipConditionEmoji}>{activeCondition.emoji}</Text>
@@ -576,7 +683,7 @@ export default function DiaryScreen() {
               ]}
             >
               <Text style={[styles.actionBadgeText, { color: colors.secondary }]}>
-                ✓ Suggestion: {activeCondition.recommendedAction}
+                ✓ {t('suggestionLabel')} {activeCondition.recommendedAction}
               </Text>
             </View>
           </View>
@@ -592,7 +699,7 @@ export default function DiaryScreen() {
                   color: colors.textPrimary,
                 },
               ]}
-              placeholder="Optional note (e.g. hydration mask, travel, reaction)..."
+              placeholder={t('notesPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={note}
               onChangeText={setNote}
@@ -611,7 +718,7 @@ export default function DiaryScreen() {
                 <Text style={styles.saveButtonText}>
                   {selectedDate === todayString
                     ? t('saveTodayLog')
-                    : `${t('saveLogFor')} ${formatLogDisplayDate(selectedDate)}`}
+                    : `${t('saveLogFor')} ${formatLogDisplayDate(selectedDate, t)}`}
                 </Text>
               )}
             </TouchableOpacity>
@@ -623,7 +730,7 @@ export default function DiaryScreen() {
               {t('allHistory')}
             </Text>
             <Text style={[styles.historyCount, { color: colors.textSecondary }]}>
-              {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+              {logs.length} {logs.length === 1 ? t('entryCount') : t('entriesCount')}
             </Text>
           </View>
 
@@ -667,16 +774,16 @@ export default function DiaryScreen() {
                       <Text style={styles.historyEmoji}>{entry.emoji}</Text>
                       <View>
                         <Text style={[styles.historyLabel, { color: colors.textPrimary }]}>
-                          {entry.label}
+                          {getConditionMeta(entry.condition, t).label || entry.label}
                         </Text>
                         <Text style={[styles.historyDate, { color: colors.textMuted }]}>
-                          {formatLogDisplayDate(entry.date)} {entry.time ? `• ${entry.time}` : ''}
+                          {formatLogDisplayDate(entry.date, t)} {entry.time ? `• ${entry.time}` : ''}
                         </Text>
                       </View>
                     </View>
 
                     <TouchableOpacity
-                      onPress={() => handleDeleteLog(entry.id, entry.label, entry.date)}
+                      onPress={() => handleDeleteLog(entry.id, getConditionMeta(entry.condition, t).label || entry.label, entry.date)}
                       style={styles.deleteIconButton}
                       activeOpacity={0.6}
                       accessibilityLabel="Delete entry"
@@ -696,10 +803,10 @@ export default function DiaryScreen() {
                     ]}
                   >
                     <Text style={[styles.historyTipTitle, { color: colors.primary }]}>
-                      💡 {entry.tipTitle}
+                      💡 {getConditionMeta(entry.condition, t).tipTitle || entry.tipTitle}
                     </Text>
                     <Text style={[styles.historyTipText, { color: colors.textSecondary }]}>
-                      {entry.tipDescription}
+                      {getConditionMeta(entry.condition, t).tipDescription || entry.tipDescription}
                     </Text>
                   </View>
 

@@ -19,23 +19,24 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
 
 interface CuteAvatarOption {
   key: string;
   emoji: string;
-  label: string;
+  labelKey: TranslationKey;
 }
 
 const CUTE_AVATARS: CuteAvatarOption[] = [
-  { key: 'botanical', emoji: '🌿', label: 'Botanical' },
-  { key: 'radiance', emoji: '✨', label: 'Radiance' },
-  { key: 'blossom', emoji: '🌸', label: 'Blossom' },
-  { key: 'bear', emoji: '🧸', label: 'Cozy Bear' },
-  { key: 'bubbles', emoji: '🫧', label: 'Gentle Mist' },
-  { key: 'matcha', emoji: '🍵', label: 'Matcha Tea' },
-  { key: 'honey', emoji: '🍯', label: 'Honey Glow' },
-  { key: 'barrier', emoji: '🥑', label: 'Nourish' },
+  { key: 'botanical', emoji: '🌿', labelKey: 'avatarBotanical' },
+  { key: 'radiance', emoji: '✨', labelKey: 'avatarRadiance' },
+  { key: 'blossom', emoji: '🌸', labelKey: 'avatarBlossom' },
+  { key: 'bear', emoji: '🧸', labelKey: 'avatarBear' },
+  { key: 'bubbles', emoji: '🫧', labelKey: 'avatarBubbles' },
+  { key: 'matcha', emoji: '🍵', labelKey: 'avatarMatcha' },
+  { key: 'honey', emoji: '🍯', labelKey: 'avatarHoney' },
+  { key: 'barrier', emoji: '🥑', labelKey: 'avatarBarrier' },
 ];
 
 export default function SettingsScreen() {
@@ -63,7 +64,7 @@ export default function SettingsScreen() {
 
   const handleSaveName = async () => {
     if (!name.trim()) {
-      Alert.alert('Invalid Name', 'Name cannot be empty.');
+      Alert.alert(t('invalidName'), t('nameCannotBeEmpty'));
       return;
     }
 
@@ -74,7 +75,7 @@ export default function SettingsScreen() {
       Alert.alert(t('savedAlert'), t('nameUpdated'));
     } catch (error) {
       console.error('Error updating name:', error);
-      Alert.alert('Error', 'Could not save profile name.');
+      Alert.alert(t('saveFailed'), t('couldNotSaveName'));
     } finally {
       setIsSavingName(false);
     }
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
       await updateProfile({ photoUri: avatarUri });
     } catch (error) {
       console.error('Error saving avatar:', error);
-      Alert.alert('Error', 'Could not update avatar.');
+      Alert.alert(t('saveFailed'), t('couldNotUpdateAvatar'));
     }
   };
 
@@ -108,8 +109,8 @@ export default function SettingsScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Photo Library Permission Needed',
-          'Please allow photo library access in your device settings to choose a profile photo.'
+          t('photoPermissionNeeded'),
+          t('photoPermissionMessage')
         );
         return;
       }
@@ -129,7 +130,7 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error('Gallery picker error:', error);
-      Alert.alert('Error', 'Could not open image library.');
+      Alert.alert(t('saveFailed'), t('couldNotOpenGallery'));
     }
   };
 
@@ -141,8 +142,8 @@ export default function SettingsScreen() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Camera Permission Needed',
-          'Please allow camera access in your device settings to take a profile photo.'
+          t('cameraPermissionNeeded'),
+          t('cameraPermissionMessage')
         );
         return;
       }
@@ -161,7 +162,7 @@ export default function SettingsScreen() {
       }
     } catch (error) {
       console.error('Camera error:', error);
-      Alert.alert('Error', 'Could not launch camera.');
+      Alert.alert(t('saveFailed'), t('couldNotLaunchCamera'));
     }
   };
 
@@ -311,7 +312,7 @@ export default function SettingsScreen() {
               <View style={styles.inputLabelRow}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('name')}</Text>
                 {hasUnsavedNameChange ? (
-                  <Text style={[styles.unsavedBadge, { color: colors.primary }]}>Unsaved</Text>
+                  <Text style={[styles.unsavedBadge, { color: colors.primary }]}>{t('unsaved')}</Text>
                 ) : null}
               </View>
               <View style={styles.nameInputRow}>
@@ -571,7 +572,7 @@ export default function SettingsScreen() {
                   {t('editPhoto')}
                 </Text>
                 <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
-                  Personalize how you appear in your daily rituals
+                  {t('editPhotoSub')}
                 </Text>
 
                 <View style={styles.sheetOptionsGroup}>
@@ -600,7 +601,7 @@ export default function SettingsScreen() {
                         {t('chooseAvatar')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        Pick a minimalist aesthetic skin ritual icon
+                        {t('chooseAvatarSub')}
                       </Text>
                     </View>
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
@@ -631,7 +632,7 @@ export default function SettingsScreen() {
                         {t('chooseGallery')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        Select a portrait from your photo library
+                        {t('chooseGallerySub')}
                       </Text>
                     </View>
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
@@ -662,7 +663,7 @@ export default function SettingsScreen() {
                         {t('takePhoto')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        Capture a fresh photo with your camera
+                        {t('takePhotoSub')}
                       </Text>
                     </View>
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
@@ -694,7 +695,7 @@ export default function SettingsScreen() {
                           {t('removePhoto')}
                         </Text>
                         <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                          Reset back to your name initials
+                          {t('removePhotoSubtitle')}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -728,17 +729,17 @@ export default function SettingsScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.avatarBackText, { color: colors.textPrimary }]}>
-                      ← Back
+                      ← {t('back')}
                     </Text>
                   </TouchableOpacity>
                   <Text style={[styles.sheetTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
-                    Cute Avatars
+                    {t('cuteAvatars')}
                   </Text>
                   <View style={{ width: 60 }} />
                 </View>
 
                 <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
-                  Tap any cute aesthetic icon to set as your profile avatar
+                  {t('avatarSheetSubtitle')}
                 </Text>
 
                 <View style={styles.cuteAvatarGrid}>
@@ -771,7 +772,7 @@ export default function SettingsScreen() {
                             },
                           ]}
                         >
-                          {item.label}
+                          {t(item.labelKey)}
                         </Text>
                       </TouchableOpacity>
                     );

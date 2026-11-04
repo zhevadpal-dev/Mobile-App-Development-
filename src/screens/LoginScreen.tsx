@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import ThemeToggle from '../components/ThemeToggle';
 import { SPACING, RADIUS } from '../constants/theme';
 
@@ -23,6 +24,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export default function LoginScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const { login } = useAuth();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,11 +36,11 @@ export default function LoginScreen({ navigation }: Props) {
   const handleLogin = async () => {
     setErrorMessage(null);
     if (!email.trim()) {
-      setErrorMessage('Please enter your email.');
+      setErrorMessage(t('errorEnterEmail'));
       return;
     }
     if (!password) {
-      setErrorMessage('Please enter your password.');
+      setErrorMessage(t('errorEnterPassword'));
       return;
     }
 
@@ -46,7 +48,7 @@ export default function LoginScreen({ navigation }: Props) {
       setIsSubmitting(true);
       await login({ email, password });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Login failed. Please check your credentials.');
+      setErrorMessage(error?.message || t('errorLoginFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +83,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.heroSection}>
               <Text style={[styles.brandTitle, { color: colors.textPrimary }]}>Skin Diary</Text>
               <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-                Sign in to your mindful skincare ritual
+                {t('signInSubtitle')}
               </Text>
             </View>
 
@@ -104,7 +106,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={styles.formContainer}>
               {/* Email Field */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>EMAIL</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('email')}</Text>
                 <TextInput
                   style={[
                     styles.textInput,
@@ -115,7 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
                       color: colors.textPrimary,
                     },
                   ]}
-                  placeholder="name@example.com"
+                  placeholder={t('emailPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={email}
                   onChangeText={text => {
@@ -132,7 +134,7 @@ export default function LoginScreen({ navigation }: Props) {
 
               {/* Password Field */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>PASSWORD</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('password')}</Text>
                 <View
                   style={[
                     styles.passwordInputContainer,
@@ -145,7 +147,7 @@ export default function LoginScreen({ navigation }: Props) {
                 >
                   <TextInput
                     style={[styles.passwordTextInput, { color: colors.textPrimary }]}
-                    placeholder="••••••••"
+                    placeholder={t('passwordPlaceholder')}
                     placeholderTextColor={colors.textMuted}
                     value={password}
                     onChangeText={text => {
@@ -165,7 +167,7 @@ export default function LoginScreen({ navigation }: Props) {
                     accessibilityLabel="Toggle password visibility"
                   >
                     <Text style={[styles.eyeText, { color: colors.textMuted }]}>
-                      {showPassword ? 'Hide' : 'Show'}
+                      {showPassword ? t('hide') : t('show')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -185,7 +187,7 @@ export default function LoginScreen({ navigation }: Props) {
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.primaryButtonText}>Sign In</Text>
+                  <Text style={styles.primaryButtonText}>{t('signIn')}</Text>
                 )}
               </TouchableOpacity>
 
@@ -202,7 +204,7 @@ export default function LoginScreen({ navigation }: Props) {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.demoButtonText, { color: colors.secondary }]}>
-                  ✨ Quick Demo Sign-In (Zeynep)
+                  {t('quickDemo')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -220,8 +222,8 @@ export default function LoginScreen({ navigation }: Props) {
               hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
             >
               <Text style={[styles.switchAuthText, { color: colors.textSecondary }]}>
-                Don't have an account?{' '}
-                <Text style={[styles.switchAuthLink, { color: colors.primary }]}>Sign Up</Text>
+                {t('dontHaveAccount')}{' '}
+                <Text style={[styles.switchAuthLink, { color: colors.primary }]}>{t('signUp')}</Text>
               </Text>
             </TouchableOpacity>
           </View>

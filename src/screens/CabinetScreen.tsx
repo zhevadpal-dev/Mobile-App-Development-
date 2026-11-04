@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
 import {
   Product,
@@ -29,9 +30,30 @@ import {
 } from '../services/productStorage';
 
 /**
+ * Localized category label resolver
+ */
+export const getCategoryLabel = (category: string, t: (k: TranslationKey) => string): string => {
+  const clean = category.toLowerCase();
+  if (clean === 'all') return t('catAll');
+  if (clean.includes('cleanse')) return t('catCleanser');
+  if (clean.includes('tone')) return t('catToner');
+  if (clean.includes('serum')) return t('catSerum');
+  if (clean.includes('moistur')) return t('catMoisturizer');
+  if (clean.includes('sun') || clean.includes('spf')) return t('catSunscreen');
+  if (clean.includes('mask') || clean.includes('treat')) return t('catMasks');
+  if (clean.includes('oil')) return t('catFacialOil');
+  return category;
+};
+
+const SHORT_MONTH_KEYS: TranslationKey[] = [
+  'monthJan', 'monthFeb', 'monthMar', 'monthApr', 'monthMay', 'monthJun',
+  'monthJul', 'monthAug', 'monthSep', 'monthOct', 'monthNov', 'monthDec',
+];
+
+/**
  * Format ISO or YYYY-MM-DD date string into a subtle elegant display
  */
-const formatOpenedDate = (dateStr: string): string => {
+const formatOpenedDate = (dateStr: string, t: (key: TranslationKey) => string): string => {
   if (!dateStr) return '';
   try {
     const parts = dateStr.split('-');
@@ -39,21 +61,15 @@ const formatOpenedDate = (dateStr: string): string => {
       const year = parts[0];
       const monthIndex = parseInt(parts[1], 10) - 1;
       const day = parseInt(parts[2], 10);
-      const monthNames = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ];
       if (monthIndex >= 0 && monthIndex < 12 && !isNaN(day)) {
-        return `${monthNames[monthIndex]} ${day}, ${year}`;
+        const monthName = t(SHORT_MONTH_KEYS[monthIndex]);
+        return `${day} ${monthName} ${year}`;
       }
     }
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
+      const monthName = t(SHORT_MONTH_KEYS[d.getMonth()]);
+      return `${d.getDate()} ${monthName} ${d.getFullYear()}`;
     }
   } catch {
     // fallback to original string
@@ -162,11 +178,11 @@ export default function CabinetScreen() {
    */
   const handleSaveProduct = async () => {
     if (!name.trim()) {
-      Alert.alert('Required Field', 'Please enter a product name.');
+      Alert.alert(t('requiredField'), t('enterProductName'));
       return;
     }
     if (!openedDate.trim()) {
-      Alert.alert('Required Field', 'Please enter or select an opened date.');
+      Alert.alert(t('requiredField'), t('enterOpenedDate'));
       return;
     }
 
@@ -187,7 +203,7 @@ export default function CabinetScreen() {
       await loadProducts();
     } catch (error) {
       console.error('Error saving product:', error);
-      Alert.alert('Save Failed', 'Could not save the product. Please try again.');
+      Alert.alert(t('saveFailed'), t('couldNotSaveProduct'));
     } finally {
       setIsSubmitting(false);
     }
@@ -198,12 +214,12 @@ export default function CabinetScreen() {
    */
   const handleDeleteProduct = (id: string, productName: string) => {
     Alert.alert(
-      'Remove Product',
-      `Are you sure you want to remove "${productName}" from your cabinet?`,
+      t('removeProductTitle'),
+      `${productName} — ${t('removeProductConfirm')}`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('remove'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -211,7 +227,7 @@ export default function CabinetScreen() {
               await loadProducts();
             } catch (error) {
               console.error('Delete error:', error);
-              Alert.alert('Error', 'Failed to delete product.');
+              Alert.alert(t('saveFailed'), t('failedToDeleteProduct'));
             }
           },
         },
@@ -220,15 +236,15 @@ export default function CabinetScreen() {
   };
 
   // Filter list
+  const filterTabs = ['All', 'cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'masks_treatments'];
+
   const filteredProducts =
     selectedFilter === 'All'
       ? products
       : products.filter(p => {
           const meta = getCategoryMeta(p.category);
-          return meta.label.toLowerCase() === selectedFilter.toLowerCase();
+          return meta.key.toLowerCase() === selectedFilter.toLowerCase();
         });
-
-  const filterTabs = ['All', ...PRIMARY_CATEGORIES.map(c => c.label)];
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -239,7 +255,7 @@ export default function CabinetScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.eyebrow, { color: colors.secondary }]}>
-            DIGITAL CABINET
+            {t('digitalCabinet')}
           </Text>
           <View style={styles.titleRow}>
             <View>
@@ -247,7 +263,7 @@ export default function CabinetScreen() {
                 {t('cabinetTitle')}
               </Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {products.length} {products.length === 1 ? 'product' : 'products'} • Sorted thinnest to thickest
+                {products.length} {products.length === 1 ? t('productsCountSingle') : t('productsCountMulti')}
               </Text>
             </View>
             <TouchableOpacity
@@ -294,7 +310,7 @@ export default function CabinetScreen() {
                     },
                   ]}
                 >
-                  {tab}
+                  {getCategoryLabel(tab, t)}
                 </Text>
               </TouchableOpacity>
             );
@@ -312,7 +328,7 @@ export default function CabinetScreen() {
           ]}
         >
           <Text style={[styles.orderBannerText, { color: colors.primary }]}>
-            💧 <Text style={{ fontWeight: '700' }}>Application Hierarchy:</Text> Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks & Treatments
+            💧 <Text style={{ fontWeight: '700' }}>{t('appHierarchy')}</Text> {t('catCleanser')} → {t('catToner')} → {t('catSerum')} → {t('catMoisturizer')} → {t('catSunscreen')} → {t('catMasks')}
           </Text>
         </View>
 
@@ -321,7 +337,7 @@ export default function CabinetScreen() {
           <View style={styles.centerContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-              Loading your cabinet...
+              {t('loadingCabinet')}
             </Text>
           </View>
         ) : products.length === 0 ? (
@@ -336,30 +352,30 @@ export default function CabinetScreen() {
           >
             <Text style={styles.emptyIcon}>🧴✨</Text>
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              Your Cabinet is Empty
+              {t('emptyCabinetTitle')}
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Add your skincare products to organize them by dermatological application order and track opened dates.
+              {t('emptyCabinetSubtitle')}
             </Text>
             <TouchableOpacity
               style={[styles.emptyButton, { backgroundColor: colors.primary }]}
               onPress={() => setIsModalVisible(true)}
               activeOpacity={0.85}
             >
-              <Text style={styles.emptyButtonText}>+ Add First Product</Text>
+              <Text style={styles.emptyButtonText}>{t('addFirstProduct')}</Text>
             </TouchableOpacity>
           </View>
         ) : filteredProducts.length === 0 ? (
           <View style={styles.emptyFilterContainer}>
             <Text style={[styles.emptyFilterText, { color: colors.textSecondary }]}>
-              No products found under "{selectedFilter}".
+              {t('noProductsFilter')}
             </Text>
             <TouchableOpacity
               onPress={() => setSelectedFilter('All')}
               style={styles.resetFilterButton}
             >
               <Text style={[styles.resetFilterText, { color: colors.primary }]}>
-                Show all products
+                {getCategoryLabel('All', t)}
               </Text>
             </TouchableOpacity>
           </View>
@@ -396,7 +412,7 @@ export default function CabinetScreen() {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      Opened {formatOpenedDate(product.openedDate)}
+                      {t('openedOn')} {formatOpenedDate(product.openedDate, t)}
                     </Text>
                   </View>
 
@@ -448,7 +464,7 @@ export default function CabinetScreen() {
                               { color: colors.textSecondary },
                             ]}
                           >
-                            {meta.label.toUpperCase()}
+                            {getCategoryLabel(meta.key, t).toUpperCase()}
                           </Text>
                         </View>
                       </View>
@@ -517,7 +533,7 @@ export default function CabinetScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalEyebrow, { color: colors.primary }]}>
-                  NEW ADDITION
+                  {t('newAddition')}
                 </Text>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                   {t('newProductTitle')}
@@ -551,7 +567,7 @@ export default function CabinetScreen() {
                       color: colors.textPrimary,
                     },
                   ]}
-                  placeholder="e.g. 10% Niacinamide Serum"
+                  placeholder={t('productNamePlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={name}
                   onChangeText={setName}
@@ -562,7 +578,7 @@ export default function CabinetScreen() {
               {/* Brand Input (Optional) */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
-                  Brand (Optional)
+                  {t('brandOptional')}
                 </Text>
                 <TextInput
                   style={[
@@ -573,7 +589,7 @@ export default function CabinetScreen() {
                       color: colors.textPrimary,
                     },
                   ]}
-                  placeholder="e.g. The Ordinary, CeraVe, Paula's Choice"
+                  placeholder={t('brandPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={brand}
                   onChangeText={setBrand}
@@ -587,7 +603,7 @@ export default function CabinetScreen() {
                   {t('category')} <Text style={{ color: colors.primary }}>*</Text>
                 </Text>
                 <Text style={[styles.inputHelp, { color: colors.textSecondary }]}>
-                  Determines application sorting order (thinnest to thickest)
+                  {t('catHelpText')}
                 </Text>
 
                 <View style={styles.categoryGrid}>
@@ -647,7 +663,7 @@ export default function CabinetScreen() {
                             },
                           ]}
                         >
-                          {cat.label}
+                          {getCategoryLabel(cat.key, t)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -666,7 +682,7 @@ export default function CabinetScreen() {
                     style={styles.todayButton}
                   >
                     <Text style={[styles.todayButtonText, { color: colors.primary }]}>
-                      Set to Today
+                      {t('setToToday')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -686,7 +702,7 @@ export default function CabinetScreen() {
                   onChangeText={setOpenedDate}
                 />
                 <Text style={[styles.dateHint, { color: colors.textMuted }]}>
-                  Used to track product freshness and period-after-opening (PAO).
+                  {t('paoHint')}
                 </Text>
               </View>
 

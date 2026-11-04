@@ -12,6 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootTabParamList } from '../types/navigation';
+import { getCategoryLabel } from './CabinetScreen';
 
 /**
  * Determine default routine tab based on device's current local time:
@@ -185,7 +186,7 @@ export default function RoutineScreen() {
 
         {/* Step-by-Step Checklist */}
         <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-          Steps in Application Order
+          {t('stepsInOrder')}
         </Text>
         <View style={styles.stepsList}>
           {steps.map(step => (
@@ -236,7 +237,7 @@ export default function RoutineScreen() {
                         { color: colors.primary },
                       ]}
                     >
-                      Step {step.order} • {step.category}
+                      {t('step')} {step.order} • {getCategoryLabel(step.category, t)}
                     </Text>
                   </View>
                 </View>
