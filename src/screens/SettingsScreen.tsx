@@ -19,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { SPACING, RADIUS } from '../constants/theme';
+import { getSeasonalEmoji, getSeasonName } from '../utils/season';
 
 interface CuteAvatarOption {
   key: string;
@@ -41,6 +42,8 @@ export default function SettingsScreen() {
   const navigation = useNavigation();
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, updateProfile, logout } = useAuth();
+  const seasonalEmoji = getSeasonalEmoji();
+  const seasonName = getSeasonName();
 
   const [name, setName] = useState(user?.name || '');
   const [photoUri, setPhotoUri] = useState<string | undefined>(user?.photoUri);
@@ -250,12 +253,10 @@ export default function SettingsScreen() {
                   <View
                     style={[
                       styles.largeAvatarPlaceholder,
-                      { backgroundColor: isDark ? '#3A231C' : '#FBECE8' },
+                      { backgroundColor: isDark ? '#1C261E' : colors.secondaryLight },
                     ]}
                   >
-                    <Text style={[styles.largeAvatarInitial, { color: colors.primary }]}>
-                      {userInitial}
-                    </Text>
+                    <Text style={styles.largeAvatarEmoji}>{seasonalEmoji}</Text>
                   </View>
                 )}
 

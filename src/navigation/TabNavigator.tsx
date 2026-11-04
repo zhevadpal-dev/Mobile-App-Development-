@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import DiaryScreen from '../screens/DiaryScreen';
 import { RootTabParamList, MainStackParamList } from '../types/navigation';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { getSeasonalEmoji } from '../utils/season';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -39,7 +40,7 @@ export default function TabNavigator() {
     navigation.navigate('Settings');
   };
 
-  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
+  const seasonalEmoji = useMemo(() => getSeasonalEmoji(), []);
 
   return (
     <Tab.Navigator
@@ -64,8 +65,8 @@ export default function TabNavigator() {
             style={[
               styles.avatarButton,
               {
-                backgroundColor: isDark ? '#3A231C' : '#FBECE8',
-                borderColor: colors.primary,
+                backgroundColor: isDark ? '#1C261E' : colors.secondaryLight,
+                borderColor: colors.secondary,
               },
             ]}
             activeOpacity={0.7}
@@ -78,7 +79,7 @@ export default function TabNavigator() {
             ) : user?.photoUri ? (
               <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={[styles.avatarText, { color: colors.primary }]}>{userInitial}</Text>
+              <Text style={styles.seasonalEmojiText}>{seasonalEmoji}</Text>
             )}
           </TouchableOpacity>
         ),
@@ -157,9 +158,9 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   avatarButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -175,6 +176,11 @@ const styles = StyleSheet.create({
   },
   avatarEmojiText: {
     fontSize: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  seasonalEmojiText: {
+    fontSize: 17,
     textAlign: 'center',
     includeFontPadding: false,
   },
