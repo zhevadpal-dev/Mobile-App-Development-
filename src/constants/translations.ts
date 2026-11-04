@@ -215,6 +215,17 @@ export const TRANSLATIONS = {
     avatarHoney: 'Honey Glow',
     avatarBarrier: 'Nourish',
 
+    // Onboarding Screen
+    onboardingSkip: 'Skip',
+    onboardingNext: 'Next',
+    onboardingGetStarted: 'Get Started',
+    onboarding1Title: 'Digital Cabinet',
+    onboarding1Subtitle: 'Add your skincare products. Automatically sorted from thinnest to thickest for the perfect routine.',
+    onboarding2Title: 'Track Routines',
+    onboarding2Subtitle: 'Complete your AM and PM routines. Build your streak and stay consistent.',
+    onboarding3Title: 'Skin Diary',
+    onboarding3Subtitle: 'Log your daily skin condition with emojis and track your progress over time.',
+
     // Auth Screens
     signIn: 'Sign In',
     signUp: 'Sign Up',
@@ -452,6 +463,17 @@ export const TRANSLATIONS = {
     avatarMatcha: 'Matcha Çayı',
     avatarHoney: 'Bal Işıltısı',
     avatarBarrier: 'Besleyici',
+
+    // Onboarding Screen
+    onboardingSkip: 'Atla',
+    onboardingNext: 'İleri',
+    onboardingGetStarted: 'Hemen Başla',
+    onboarding1Title: 'Dijital Dolap',
+    onboarding1Subtitle: 'Cilt bakım ürünlerinizi ekleyin. Kusursuz bir rutin için en inceden en yoğuna otomatik sıralanır.',
+    onboarding2Title: 'Rutinleri Takip Et',
+    onboarding2Subtitle: 'Sabah ve akşam rutinlerinizi tamamlayın. Serinizi koruyun ve tutarlı kalın.',
+    onboarding3Title: 'Skin Diary',
+    onboarding3Subtitle: 'Günlük cilt durumunuzu emojilerle kaydedin ve zaman içindeki gelişiminizi takip edin.',
 
     // Auth Screens
     signIn: 'Giriş Yap',

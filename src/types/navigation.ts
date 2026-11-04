@@ -5,6 +5,7 @@ export type RootTabParamList = {
 };
 
 export type AuthStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   SignUp: undefined;
 };
