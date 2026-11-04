@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,16 @@ import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootTabParamList } from '../types/navigation';
+
+/**
+ * Determine default routine tab based on device's current local time:
+ * - 05:00 (5:00 AM) to 16:59 (4:59 PM) -> 'AM' (Morning Routine)
+ * - 17:00 (5:00 PM) or later, or before 05:00 AM -> 'PM' (Evening Routine)
+ */
+const getDefaultRoutineByTime = (): 'AM' | 'PM' => {
+  const currentHour = new Date().getHours();
+  return currentHour >= 5 && currentHour < 17 ? 'AM' : 'PM';
+};
 
 interface RoutineStep {
   id: string;
@@ -40,9 +50,15 @@ const SAMPLE_PM_STEPS: RoutineStep[] = [
 export default function RoutineScreen() {
   const { colors, isDark } = useTheme();
   const navigation = useNavigation<NavigationProp<RootTabParamList>>();
-  const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>('AM');
+  // Set default routine tab based on device's current local time
+  const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>(getDefaultRoutineByTime);
   const [amSteps, setAmSteps] = useState<RoutineStep[]>(SAMPLE_AM_STEPS);
   const [pmSteps, setPmSteps] = useState<RoutineStep[]>(SAMPLE_PM_STEPS);
+
+  // Re-check local time when screen mounts
+  useEffect(() => {
+    setActiveRoutine(getDefaultRoutineByTime());
+  }, []);
 
   const steps = activeRoutine === 'AM' ? amSteps : pmSteps;
   const setSteps = activeRoutine === 'AM' ? setAmSteps : setPmSteps;
