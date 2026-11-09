@@ -229,12 +229,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
   },
   /* Header Layout */
   header: {
+    width: '100%',
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -301,9 +302,11 @@ const styles = StyleSheet.create({
   },
   /* Hero Card for Agile Scaffold */
   heroCard: {
+    width: '92%',
+    alignSelf: 'center',
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: SPACING.lg,
+    padding: 26,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
@@ -342,13 +345,13 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.md,
   },
   quickActionsRow: {
-    gap: 10,
+    gap: 12,
   },
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
+    gap: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: RADIUS.md,
     borderWidth: 1,
