@@ -82,6 +82,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
@@ -228,7 +229,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
+    width: '100%',
+    alignItems: 'center',
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
   },
@@ -304,9 +311,10 @@ const styles = StyleSheet.create({
   heroCard: {
     width: '92%',
     alignSelf: 'center',
+    marginHorizontal: 'auto',
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: 26,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
