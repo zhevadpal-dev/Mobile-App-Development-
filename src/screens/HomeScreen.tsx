@@ -235,14 +235,13 @@ const styles = StyleSheet.create({
   },
   container: {
     width: '100%',
-    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
   },
   /* Header Layout */
   header: {
     width: '100%',
-    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -309,12 +308,11 @@ const styles = StyleSheet.create({
   },
   /* Hero Card for Agile Scaffold */
   heroCard: {
-    width: '92%',
+    width: '100%',
     alignSelf: 'center',
-    marginHorizontal: 'auto',
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: 24,
+    padding: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
