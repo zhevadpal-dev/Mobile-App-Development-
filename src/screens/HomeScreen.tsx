@@ -4,7 +4,6 @@ import {
   Text,
   View,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   Image,
 } from 'react-native';
@@ -81,17 +80,12 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ======================================================== */}
-        {/* Home Screen Header                                      */}
-        {/* Top Left: Dynamic Time-based Greeting                   */}
-        {/* Top Right: Balanced Minimalist Profile Avatar            */}
-        {/* ======================================================== */}
-        <View style={styles.header}>
+      {/* ======================================================== */}
+      {/* Home Screen Header                                      */}
+      {/* Top Left: Dynamic Time-based Greeting                   */}
+      {/* Top Right: Balanced Minimalist Profile Avatar            */}
+      {/* ======================================================== */}
+      <View style={styles.header}>
           {/* Top Left: Dynamic Greeting */}
           <View style={styles.greetingContainer}>
             <View style={styles.eyebrowRow}>
@@ -135,9 +129,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ======================================================== */}
-        {/* Agile Step Scaffold: Welcome & Quick Ritual Card        */}
-        {/* ======================================================== */}
+      {/* ======================================================== */}
+      {/* Vertically Centered Main Card Container                 */}
+      {/* ======================================================== */}
+      <View style={styles.cardCenterWrapper}>
         <View
           style={[
             styles.heroCard,
@@ -220,7 +215,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -229,24 +224,15 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-    width: '100%',
-  },
-  container: {
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.xl,
-  },
   /* Header Layout */
   header: {
     width: '100%',
+    paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.lg,
-    paddingTop: SPACING.xs,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
   },
   greetingContainer: {
     flex: 1,
@@ -306,19 +292,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
+  /* Center Wrapper: Vertically centers card in remaining space */
+  cardCenterWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingBottom: SPACING.lg,
+  },
   /* Hero Card for Agile Scaffold */
   heroCard: {
-    width: '100%',
+    width: '92%',
     alignSelf: 'center',
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    padding: 28,
+    padding: 26,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
-    marginBottom: SPACING.lg,
   },
   heroCardHeader: {
     flexDirection: 'row',
