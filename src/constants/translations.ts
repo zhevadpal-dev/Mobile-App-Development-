@@ -20,9 +20,20 @@ export const TRANSLATIONS = {
     selected: 'Selected:',
 
     // Tab Navigation
+    tabHome: 'Home',
     tabRoutine: 'Routine',
     tabCabinet: 'Cabinet',
     tabDiary: 'Diary',
+
+    // Home Screen
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    dailyRitualEyebrow: 'DAILY RITUAL',
+    welcomeBack: 'Welcome to your mindful skincare sanctuary',
+    startRoutineCta: 'Start Today’s Routine',
+    viewCabinetCta: 'View Cabinet',
+    logSkinConditionCta: 'Log Skin Condition',
 
     // Routine Screen
     routineTitle: 'Skincare Routine',
@@ -269,9 +280,20 @@ export const TRANSLATIONS = {
     selected: 'Seçilen:',
 
     // Tab Navigation
+    tabHome: 'Ana Sayfa',
     tabRoutine: 'Rutin',
     tabCabinet: 'Dolap',
     tabDiary: 'Günlük',
+
+    // Home Screen
+    goodMorning: 'Günaydın',
+    goodAfternoon: 'Tünaydın',
+    goodEvening: 'İyi akşamlar',
+    dailyRitualEyebrow: 'GÜNLÜK RİTÜEL',
+    welcomeBack: 'Bilinçli cilt bakımı sığınağınıza hoş geldiniz',
+    startRoutineCta: 'Bugünkü Rutini Başlat',
+    viewCabinetCta: 'Dolabı İncele',
+    logSkinConditionCta: 'Cilt Durumunu Kaydet',
 
     // Routine Screen
     routineTitle: 'Cilt Bakım Rutini',

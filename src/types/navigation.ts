@@ -1,4 +1,5 @@
 export type RootTabParamList = {
+  Home: undefined;
   Routine: undefined;
   Cabinet: undefined;
   Diary: undefined;

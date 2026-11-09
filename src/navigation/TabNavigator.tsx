@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
+import HomeScreen from '../screens/HomeScreen';
 import RoutineScreen from '../screens/RoutineScreen';
 import CabinetScreen from '../screens/CabinetScreen';
 import DiaryScreen from '../screens/DiaryScreen';
@@ -45,7 +46,7 @@ export default function TabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="Routine"
+      initialRouteName="Home"
       screenOptions={{
         headerShown: true,
         headerStyle: {
@@ -101,6 +102,15 @@ export default function TabNavigator() {
         tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          headerShown: false,
+          tabBarLabel: t('tabHome'),
+          tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="🌿" />,
+        }}
+      />
       <Tab.Screen
         name="Routine"
         component={RoutineScreen}
