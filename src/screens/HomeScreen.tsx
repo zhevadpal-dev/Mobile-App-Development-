@@ -228,15 +228,12 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xs,
+    position: 'relative',
   },
   greetingContainer: {
-    flex: 1,
-    paddingRight: SPACING.md,
+    marginTop: 48,
+    paddingRight: 60,
   },
   eyebrowRow: {
     flexDirection: 'row',
@@ -265,6 +262,9 @@ const styles = StyleSheet.create({
   },
   /* Profile Avatar */
   avatarButton: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -277,6 +277,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    zIndex: 10,
   },
   avatarImage: {
     width: '100%',
