@@ -103,7 +103,7 @@ export default function RoutineScreen() {
             activeOpacity={0.8}
             accessibilityLabel="View weather and UV recommendations"
           >
-            <Ionicons name="sunny" size={15} color={colors.accent} />
+            <Ionicons name="thermometer-outline" size={15} color={colors.accent} />
             <Text style={[styles.uvTriggerText, { color: colors.secondary }]}>
               24°C • UV 6
             </Text>
