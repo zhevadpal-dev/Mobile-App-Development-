@@ -82,52 +82,52 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* ======================================================== */}
       {/* Home Screen Header                                      */}
-      {/* Top Left: Dynamic Time-based Greeting                   */}
-      {/* Top Right: Balanced Minimalist Profile Avatar            */}
+      {/* Top Right: Pinned Profile Avatar                        */}
+      {/* Lower Left: Dynamic Time-based Greeting                 */}
       {/* ======================================================== */}
       <View style={styles.header}>
-          {/* Top Left: Dynamic Greeting */}
-          <View style={styles.greetingContainer}>
-            <View style={styles.eyebrowRow}>
-              <View style={[styles.statusDot, { backgroundColor: colors.secondary }]} />
-              <Text style={[styles.eyebrow, { color: colors.secondary }]}>
-                {t('dailyRitualEyebrow')}
-              </Text>
-            </View>
-            <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
-              {t(greetingKey)},{' '}
-              <Text style={[styles.nameHighlight, { color: colors.primary }]}>
-                {firstName}
-              </Text>
+        {/* Top Right: Pinned Profile Avatar */}
+        <TouchableOpacity
+          style={[
+            styles.avatarButton,
+            {
+              backgroundColor: isDark ? '#2D221D' : '#FBECE8',
+              borderColor: colors.primary,
+            },
+          ]}
+          onPress={handleOpenSettings}
+          activeOpacity={0.75}
+          accessibilityLabel="Open settings and profile"
+        >
+          {photoUri?.startsWith('avatar:') ? (
+            <Text style={styles.avatarEmojiText}>
+              {photoUri.replace('avatar:', '')}
+            </Text>
+          ) : photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+          ) : (
+            <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
+              {userInitial}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Dynamic Greeting (Lowered towards main card) */}
+        <View style={styles.greetingContainer}>
+          <View style={styles.eyebrowRow}>
+            <View style={[styles.statusDot, { backgroundColor: colors.secondary }]} />
+            <Text style={[styles.eyebrow, { color: colors.secondary }]}>
+              {t('dailyRitualEyebrow')}
             </Text>
           </View>
-
-          {/* Top Right: Profile Avatar */}
-          <TouchableOpacity
-            style={[
-              styles.avatarButton,
-              {
-                backgroundColor: isDark ? '#2D221D' : '#FBECE8',
-                borderColor: colors.primary,
-              },
-            ]}
-            onPress={handleOpenSettings}
-            activeOpacity={0.75}
-            accessibilityLabel="Open settings and profile"
-          >
-            {photoUri?.startsWith('avatar:') ? (
-              <Text style={styles.avatarEmojiText}>
-                {photoUri.replace('avatar:', '')}
-              </Text>
-            ) : photoUri ? (
-              <Image source={{ uri: photoUri }} style={styles.avatarImage} />
-            ) : (
-              <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
-                {userInitial}
-              </Text>
-            )}
-          </TouchableOpacity>
+          <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
+            {t(greetingKey)},{' '}
+            <Text style={[styles.nameHighlight, { color: colors.primary }]}>
+              {firstName}
+            </Text>
+          </Text>
         </View>
+      </View>
 
       {/* ======================================================== */}
       {/* Vertically Centered Main Card Container                 */}
@@ -228,11 +228,10 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     paddingHorizontal: 20,
-    paddingTop: SPACING.sm,
     position: 'relative',
   },
   greetingContainer: {
-    marginTop: 48,
+    marginTop: 80,
     paddingRight: 60,
   },
   eyebrowRow: {
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
   /* Profile Avatar */
   avatarButton: {
     position: 'absolute',
-    top: SPACING.sm,
+    top: 0,
     right: 20,
     width: 44,
     height: 44,
