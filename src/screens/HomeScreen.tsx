@@ -114,12 +114,6 @@ export default function HomeScreen() {
 
         {/* Dynamic Greeting (Lowered towards main card) */}
         <View style={styles.greetingContainer}>
-          <View style={styles.eyebrowRow}>
-            <View style={[styles.statusDot, { backgroundColor: colors.secondary }]} />
-            <Text style={[styles.eyebrow, { color: colors.secondary }]}>
-              {t('dailyRitualEyebrow')}
-            </Text>
-          </View>
           <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
             {t(greetingKey)},{' '}
             <Text style={[styles.nameHighlight, { color: colors.primary }]}>
@@ -233,23 +227,6 @@ const styles = StyleSheet.create({
   greetingContainer: {
     marginTop: 80,
     paddingRight: 60,
-  },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  eyebrow: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontWeight: '700',
-    textTransform: 'uppercase',
   },
   greetingTitle: {
     fontSize: 26,
