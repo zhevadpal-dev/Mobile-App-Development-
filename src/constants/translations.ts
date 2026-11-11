@@ -34,6 +34,8 @@ export const TRANSLATIONS = {
     startRoutineCta: 'Start Today’s Routine',
     viewCabinetCta: 'View Cabinet',
     logSkinConditionCta: 'Log Skin Condition',
+    uvIndexLabel: 'UV Index:',
+    uvModerate: 'Moderate',
 
     // Routine Screen
     routineTitle: 'Skincare Routine',
@@ -294,6 +296,8 @@ export const TRANSLATIONS = {
     startRoutineCta: 'Bugünkü Rutini Başlat',
     viewCabinetCta: 'Dolabı İncele',
     logSkinConditionCta: 'Cilt Durumunu Kaydet',
+    uvIndexLabel: 'UV İndeksi:',
+    uvModerate: 'Orta',
 
     // Routine Screen
     routineTitle: 'Cilt Bakım Rutini',

@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -119,6 +120,58 @@ export default function HomeScreen() {
             </Text>
           )}
         </TouchableOpacity>
+      </View>
+
+      {/* ======================================================== */}
+      {/* Weather & UV Index Widget (Compact Pill)                 */}
+      {/* ======================================================== */}
+      <View style={styles.weatherContainer}>
+        <View
+          style={[
+            styles.weatherPill,
+            {
+              backgroundColor: isDark ? '#1C261F' : '#F2F6F3',
+              borderColor: isDark ? '#2C3D30' : '#E2EBE4',
+            },
+          ]}
+        >
+          {/* Weather Segment */}
+          <View style={styles.weatherItem}>
+            <Ionicons
+              name="partly-sunny-outline"
+              size={17}
+              color={colors.accent}
+              style={styles.weatherIcon}
+            />
+            <Text style={[styles.weatherTempText, { color: colors.textPrimary }]}>
+              24°C
+            </Text>
+          </View>
+
+          {/* Minimalist Divider */}
+          <View
+            style={[
+              styles.weatherDivider,
+              { backgroundColor: isDark ? '#2E4032' : '#DDE6DF' },
+            ]}
+          />
+
+          {/* UV Index Segment */}
+          <View style={styles.weatherItem}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={15}
+              color={colors.secondary}
+              style={styles.weatherIcon}
+            />
+            <Text style={[styles.uvLabelText, { color: colors.textSecondary }]}>
+              {t('uvIndexLabel')}{' '}
+              <Text style={[styles.uvValueText, { color: colors.secondary }]}>
+                {t('uvModerate')}
+              </Text>
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* ======================================================== */}
@@ -266,6 +319,52 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: 'center',
     includeFontPadding: false,
+  },
+  /* Weather & UV Index Widget */
+  weatherContainer: {
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  weatherPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  weatherItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  weatherIcon: {
+    marginRight: 2,
+  },
+  weatherTempText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  weatherDivider: {
+    width: 1,
+    height: 12,
+    marginHorizontal: 10,
+  },
+  uvLabelText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  uvValueText: {
+    fontWeight: '700',
   },
   /* Center Wrapper: Vertically centers card in remaining space */
   cardCenterWrapper: {
