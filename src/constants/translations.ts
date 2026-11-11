@@ -36,6 +36,12 @@ export const TRANSLATIONS = {
     logSkinConditionCta: 'Log Skin Condition',
     uvIndexLabel: 'UV Index:',
     uvModerate: 'Moderate',
+    uvModalTitle: 'UV & Sun Protection',
+    weatherConditionSunny: '24°C, Sunny',
+    uvIndexHigh: 'UV Index: 6 (High)',
+    sunscreenRecommendation: 'Sunscreen is a must today!',
+    sunscreenTip: 'UV levels are high. Apply broad-spectrum SPF 30+ or 50+ and reapply every 2 hours to prevent photo-damage.',
+    close: 'Close',
 
     // Routine Screen
     routineTitle: 'Skincare Routine',
@@ -298,6 +304,12 @@ export const TRANSLATIONS = {
     logSkinConditionCta: 'Cilt Durumunu Kaydet',
     uvIndexLabel: 'UV İndeksi:',
     uvModerate: 'Orta',
+    uvModalTitle: 'UV & Güneş Koruması',
+    weatherConditionSunny: '24°C, Güneşli',
+    uvIndexHigh: 'UV İndeksi: 6 (Yüksek)',
+    sunscreenRecommendation: 'Bugün güneş kremi şart!',
+    sunscreenTip: 'UV seviyeleri yüksek. Foto-hasarı önlemek için geniş spektrumlu SPF 30+ veya 50+ uygulayın ve 2 saatte bir tazeleyin.',
+    close: 'Kapat',
 
     // Routine Screen
     routineTitle: 'Cilt Bakım Rutini',
