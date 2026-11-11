@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
@@ -53,6 +55,8 @@ export default function RoutineScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const navigation = useNavigation<NavigationProp<RootTabParamList>>();
+  // Interactive UV & Sunscreen recommendation modal visibility
+  const [isUvModalVisible, setIsUvModalVisible] = useState<boolean>(false);
   // Set default routine tab based on device's current local time
   const [activeRoutine, setActiveRoutine] = useState<'AM' | 'PM'>(getDefaultRoutineByTime);
   const [amSteps, setAmSteps] = useState<RoutineStep[]>(SAMPLE_AM_STEPS);
@@ -87,6 +91,23 @@ export default function RoutineScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{t('routineTitle')}</Text>
+          <TouchableOpacity
+            style={[
+              styles.uvTriggerPill,
+              {
+                backgroundColor: isDark ? '#1C261F' : '#F2F6F3',
+                borderColor: isDark ? '#2D3E31' : '#E2EBE4',
+              },
+            ]}
+            onPress={() => setIsUvModalVisible(true)}
+            activeOpacity={0.8}
+            accessibilityLabel="View weather and UV recommendations"
+          >
+            <Ionicons name="sunny" size={15} color={colors.accent} />
+            <Text style={[styles.uvTriggerText, { color: colors.secondary }]}>
+              24°C • UV 6
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* AM / PM Routine Toggle */}
@@ -299,6 +320,125 @@ export default function RoutineScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* ======================================================== */}
+      {/* Interactive Sunscreen Recommendation Modal              */}
+      {/* ======================================================== */}
+      <Modal
+        visible={isUvModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsUvModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View
+                style={[
+                  styles.modalIconBadge,
+                  { backgroundColor: colors.secondaryLight },
+                ]}
+              >
+                <Ionicons name="shield-checkmark" size={16} color={colors.secondary} />
+                <Text style={[styles.modalBadgeText, { color: colors.secondary }]}>
+                  {t('uvModalTitle')}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setIsUvModalVisible(false)}
+                style={styles.modalCloseIconBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityLabel="Close modal"
+              >
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Weather & UV Summary */}
+            <View style={styles.modalBody}>
+              <View style={styles.modalWeatherRow}>
+                <View
+                  style={[
+                    styles.weatherIconCircle,
+                    { backgroundColor: isDark ? '#35291F' : '#FEF6ED' },
+                  ]}
+                >
+                  <Ionicons name="partly-sunny" size={28} color={colors.accent} />
+                </View>
+                <View style={styles.weatherInfoTextCol}>
+                  <Text style={[styles.modalWeatherText, { color: colors.textPrimary }]}>
+                    {t('weatherConditionSunny')}
+                  </Text>
+                  <View
+                    style={[
+                      styles.uvLevelChip,
+                      { backgroundColor: isDark ? '#3A201A' : '#FCECE8' },
+                    ]}
+                  >
+                    <Ionicons name="warning-outline" size={13} color={colors.primary} />
+                    <Text style={[styles.uvLevelChipText, { color: colors.primary }]}>
+                      {t('uvIndexHigh')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Smart Sunscreen Recommendation Box */}
+              <View
+                style={[
+                  styles.recommendationCard,
+                  {
+                    backgroundColor: isDark ? '#232D25' : '#F1F7F3',
+                    borderColor: isDark ? '#2F3F33' : '#DBE8DE',
+                  },
+                ]}
+              >
+                <View style={styles.recommendationHeaderRow}>
+                  <Text style={styles.recommendationEmoji}>🧴</Text>
+                  <Text
+                    style={[
+                      styles.recommendationTitle,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {t('sunscreenRecommendation')}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.recommendationDesc,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t('sunscreenTip')}
+                </Text>
+              </View>
+            </View>
+
+            {/* Modal Bottom CTA */}
+            <TouchableOpacity
+              style={[
+                styles.modalActionButton,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setIsUvModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.modalActionButtonText}>{t('close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -312,8 +452,149 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
   },
+  /* Header Layout */
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: SPACING.xs,
+  },
+  uvTriggerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  uvTriggerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  /* Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  modalIconBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.full,
+  },
+  modalBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  modalCloseIconBtn: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  modalBody: {
+    marginBottom: SPACING.md,
+  },
+  modalWeatherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: SPACING.md,
+  },
+  weatherIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weatherInfoTextCol: {
+    flex: 1,
+    gap: 4,
+  },
+  modalWeatherText: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  uvLevelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: RADIUS.sm,
+  },
+  uvLevelChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  recommendationCard: {
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    padding: SPACING.md,
+  },
+  recommendationHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  recommendationEmoji: {
+    fontSize: 16,
+  },
+  recommendationTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  recommendationDesc: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  modalActionButton: {
+    height: 46,
+    borderRadius: RADIUS.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   title: {
     fontSize: 28,
