@@ -81,12 +81,20 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* ======================================================== */}
-      {/* Home Screen Header                                      */}
-      {/* Top Right: Pinned Profile Avatar                        */}
-      {/* Lower Left: Dynamic Time-based Greeting                 */}
+      {/* Home Screen Header: Top Row (Greeting & Avatar)          */}
       {/* ======================================================== */}
       <View style={styles.header}>
-        {/* Top Right: Pinned Profile Avatar */}
+        {/* Top Left: Dynamic Greeting */}
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
+            {t(greetingKey)},{' '}
+            <Text style={[styles.nameHighlight, { color: colors.primary }]}>
+              {firstName}
+            </Text>
+          </Text>
+        </View>
+
+        {/* Top Right: Profile Avatar */}
         <TouchableOpacity
           style={[
             styles.avatarButton,
@@ -111,16 +119,6 @@ export default function HomeScreen() {
             </Text>
           )}
         </TouchableOpacity>
-
-        {/* Dynamic Greeting (Lowered towards main card) */}
-        <View style={styles.greetingContainer}>
-          <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
-            {t(greetingKey)},{' '}
-            <Text style={[styles.nameHighlight, { color: colors.primary }]}>
-              {firstName}
-            </Text>
-          </Text>
-        </View>
       </View>
 
       {/* ======================================================== */}
@@ -222,11 +220,15 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     paddingHorizontal: 20,
-    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
   },
   greetingContainer: {
-    marginTop: 80,
-    paddingRight: 60,
+    flex: 1,
+    paddingRight: SPACING.md,
   },
   greetingTitle: {
     fontSize: 26,
@@ -238,9 +240,6 @@ const styles = StyleSheet.create({
   },
   /* Profile Avatar */
   avatarButton: {
-    position: 'absolute',
-    top: 0,
-    right: 20,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -253,7 +252,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    zIndex: 10,
   },
   avatarImage: {
     width: '100%',
