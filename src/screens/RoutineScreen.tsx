@@ -174,7 +174,7 @@ export default function RoutineScreen() {
                 { backgroundColor: isDark ? '#26362B' : '#E3EDE6' },
               ]}
             >
-              <Ionicons name="sunny" size={15} color={colors.secondary} />
+              <Ionicons name="thermometer-outline" size={15} color={colors.secondary} />
             </View>
 
             <View style={styles.compactUvContent}>
