@@ -12,7 +12,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TranslationKey } from '../constants/translations';
@@ -27,7 +30,28 @@ import {
   getProducts,
   addProduct,
   deleteProduct,
+  updateProduct,
 } from '../services/productStorage';
+
+/**
+ * Predefined catalog of premium skincare items for simulated AI Vision recognition
+ */
+const AI_SCANNED_PRODUCTS: Array<{
+  name: string;
+  brand: string;
+  category: ProductCategory;
+}> = [
+  { name: 'Radiance Glow Serum', brand: 'Glow Recipe', category: 'serum' },
+  { name: 'Hydrating Gentle Cleanser', brand: 'CeraVe', category: 'cleanser' },
+  { name: 'Rose Petal Hydrating Toner', brand: 'Fresh', category: 'toner' },
+  { name: 'Barrier Restore Moisture Cream', brand: 'La Roche-Posay', category: 'moisturizer' },
+  { name: 'Anthelios UV Invisible Fluid SPF 50+', brand: 'La Roche-Posay', category: 'sunscreen' },
+  { name: '10% Niacinamide + Zinc Serum', brand: 'The Ordinary', category: 'serum' },
+  { name: 'BHA 2% Liquid Exfoliant', brand: "Paula's Choice", category: 'toner' },
+  { name: 'Centella Water-Fit Sun Serum SPF 50+', brand: 'Skin1004', category: 'sunscreen' },
+  { name: 'Overnight Firming Moisture Mask', brand: 'Laneige', category: 'masks_treatments' },
+  { name: 'Squalane + Amino Cleansing Oil', brand: 'Biossance', category: 'cleanser' },
+];
 
 /**
  * Localized category label resolver
@@ -122,14 +146,18 @@ export default function CabinetScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
 
-  // Form State
-  const [name, setName] = useState<string>('');
-  const [brand, setBrand] = useState<string>('');
-  const [category, setCategory] = useState<ProductCategory>('cleanser');
-  const [openedDate, setOpenedDate] = useState<string>(getTodayFormatted());
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // AI Vision Scanning Simulation State
+  const [isAiScanning, setIsAiScanning] = useState<boolean>(false);
+  const [scannedImageUri, setScannedImageUri] = useState<string | null>(null);
+
+  // Edit Product Modal State
+  const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState<string>('');
+  const [editBrand, setEditBrand] = useState<string>('');
+  const [editCategory, setEditCategory] = useState<ProductCategory>('cleanser');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
 
   /**
    * Fetch products from AsyncStorage and sort automatically (thinnest to thickest)
@@ -164,48 +192,131 @@ export default function CabinetScreen() {
   }, [loadProducts]);
 
   /**
-   * Reset Add Product Form
+   * Simulated AI Vision Analysis & Auto-Categorization
+   * Shows scanning overlay for ~2000ms, then auto-generates product data and saves to Cabinet.
    */
-  const resetForm = () => {
-    setName('');
-    setBrand('');
-    setCategory('cleanser');
-    setOpenedDate(getTodayFormatted());
+  const runAiAnalysis = (imageUri: string) => {
+    setScannedImageUri(imageUri);
+    setIsAiScanning(true);
+
+    setTimeout(async () => {
+      try {
+        const randomIndex = Math.floor(Math.random() * AI_SCANNED_PRODUCTS.length);
+        const mockProduct = AI_SCANNED_PRODUCTS[randomIndex];
+        const meta = getCategoryMeta(mockProduct.category);
+
+        await addProduct({
+          name: mockProduct.name,
+          brand: mockProduct.brand,
+          category: meta.key,
+          openedDate: getTodayFormatted(),
+          orderWeight: meta.orderWeight,
+          imageUri,
+        });
+
+        await loadProducts();
+      } catch (error) {
+        console.error('Error during AI auto-categorization:', error);
+        Alert.alert(t('saveFailed'), t('couldNotSaveProduct'));
+      } finally {
+        setIsAiScanning(false);
+        setScannedImageUri(null);
+      }
+    }, 2000);
   };
 
   /**
-   * Handle Create Product Submission
+   * Launch Camera for AI Product Scan (with library fallback for simulator or permissions)
    */
-  const handleSaveProduct = async () => {
-    if (!name.trim()) {
-      Alert.alert(t('requiredField'), t('enterProductName'));
-      return;
+  const handleScanProduct = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libStatus.status === 'granted') {
+          const libResult = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.85,
+          });
+          if (!libResult.canceled && libResult.assets?.[0]?.uri) {
+            runAiAnalysis(libResult.assets[0].uri);
+          }
+        } else {
+          Alert.alert(t('cameraPermissionNeeded'), t('cameraPermissionMessage'));
+        }
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        runAiAnalysis(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.warn('Camera error, trying gallery fallback:', error);
+      try {
+        const libResult = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.85,
+        });
+        if (!libResult.canceled && libResult.assets?.[0]?.uri) {
+          runAiAnalysis(libResult.assets[0].uri);
+        }
+      } catch (e) {
+        console.error('Gallery fallback error:', e);
+      }
     }
-    if (!openedDate.trim()) {
-      Alert.alert(t('requiredField'), t('enterOpenedDate'));
+  };
+
+  /**
+   * Open Edit Product Modal
+   */
+  const handleOpenEditModal = (product: Product) => {
+    setEditingProduct(product);
+    setEditName(product.name);
+    setEditBrand(product.brand || '');
+    setEditCategory(getCategoryMeta(product.category).key);
+    setIsEditModalVisible(true);
+  };
+
+  /**
+   * Save Product Edits
+   */
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+    if (!editName.trim()) {
+      Alert.alert(t('requiredField'), t('enterProductName'));
       return;
     }
 
     try {
-      setIsSubmitting(true);
-      const meta = getCategoryMeta(category);
+      setIsSubmittingEdit(true);
+      const meta = getCategoryMeta(editCategory);
 
-      await addProduct({
-        name: name.trim(),
-        brand: brand.trim() || undefined,
+      await updateProduct(editingProduct.id, {
+        name: editName.trim(),
+        brand: editBrand.trim() || undefined,
         category: meta.key,
-        openedDate: openedDate.trim(),
         orderWeight: meta.orderWeight,
       });
 
-      resetForm();
-      setIsModalVisible(false);
+      setIsEditModalVisible(false);
+      setEditingProduct(null);
       await loadProducts();
     } catch (error) {
-      console.error('Error saving product:', error);
-      Alert.alert(t('saveFailed'), t('couldNotSaveProduct'));
+      console.error('Failed to update product:', error);
+      Alert.alert(t('saveFailed'), 'Failed to update product.');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingEdit(false);
     }
   };
 
@@ -268,10 +379,14 @@ export default function CabinetScreen() {
             </View>
             <TouchableOpacity
               style={[styles.addButton, { backgroundColor: colors.primary }]}
-              onPress={() => setIsModalVisible(true)}
+              onPress={handleScanProduct}
               activeOpacity={0.85}
+              accessibilityLabel="Scan skincare product with camera"
             >
-              <Text style={styles.addButtonText}>+ {t('addProduct')}</Text>
+              <View style={styles.addButtonContent}>
+                <Ionicons name="camera" size={15} color="#FFFFFF" />
+                <Text style={styles.addButtonText}>{t('scanProduct')}</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -359,10 +474,14 @@ export default function CabinetScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-              onPress={() => setIsModalVisible(true)}
+              onPress={handleScanProduct}
               activeOpacity={0.85}
+              accessibilityLabel="Scan first skincare product with camera"
             >
-              <Text style={styles.emptyButtonText}>{t('addFirstProduct')}</Text>
+              <View style={styles.emptyButtonContent}>
+                <Ionicons name="camera" size={17} color="#FFFFFF" />
+                <Text style={styles.emptyButtonText}>{t('scanFirstProduct')}</Text>
+              </View>
             </TouchableOpacity>
           </View>
         ) : filteredProducts.length === 0 ? (
@@ -417,7 +536,7 @@ export default function CabinetScreen() {
                   </View>
 
                   <View style={styles.cardMainRow}>
-                    {/* Order Weight Circle */}
+                    {/* Order Weight Circle / Captured Product Thumbnail */}
                     <View
                       style={[
                         styles.orderCircle,
@@ -429,20 +548,29 @@ export default function CabinetScreen() {
                         },
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.orderNumber,
-                          {
-                            color:
-                              orderWeight === 1
-                                ? colors.secondary
-                                : colors.primary,
-                          },
-                        ]}
-                      >
-                        #{orderWeight}
-                      </Text>
-                      <Text style={styles.orderIcon}>{meta.icon}</Text>
+                      {product.imageUri ? (
+                        <Image
+                          source={{ uri: product.imageUri }}
+                          style={styles.productThumbnail}
+                        />
+                      ) : (
+                        <>
+                          <Text
+                            style={[
+                              styles.orderNumber,
+                              {
+                                color:
+                                  orderWeight === 1
+                                    ? colors.secondary
+                                    : colors.primary,
+                              },
+                            ]}
+                          >
+                            #{orderWeight}
+                          </Text>
+                          <Text style={styles.orderIcon}>{meta.icon}</Text>
+                        </>
+                      )}
                     </View>
 
                     {/* Product Details */}
@@ -490,17 +618,34 @@ export default function CabinetScreen() {
                       ) : null}
                     </View>
 
-                    {/* Quick Delete Action */}
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDeleteProduct(product.id, product.name)}
-                      activeOpacity={0.6}
-                      accessibilityLabel={`Remove ${product.name}`}
-                    >
-                      <Text style={[styles.deleteIconText, { color: colors.textMuted }]}>
-                        ✕
-                      </Text>
-                    </TouchableOpacity>
+                    {/* Card Actions: Subtle Edit & Delete */}
+                    <View style={styles.cardActionsCol}>
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => handleOpenEditModal(product)}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel={`Edit ${product.name}`}
+                      >
+                        <Ionicons
+                          name="pencil-outline"
+                          size={15}
+                          color={colors.textMuted}
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.actionIconButton}
+                        onPress={() => handleDeleteProduct(product.id, product.name)}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel={`Remove ${product.name}`}
+                      >
+                        <Text style={[styles.deleteIconText, { color: colors.textMuted }]}>
+                          ✕
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               );
@@ -509,12 +654,97 @@ export default function CabinetScreen() {
         )}
       </ScrollView>
 
-      {/* Add Product Modal */}
+      {/* ======================================================== */}
+      {/* AI Vision Analysis Simulation Overlay                     */}
+      {/* ======================================================== */}
       <Modal
-        visible={isModalVisible}
+        visible={isAiScanning}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.aiOverlay}>
+          <View
+            style={[
+              styles.aiModalCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            {/* Viewfinder Frame */}
+            <View
+              style={[
+                styles.scannerFrame,
+                { backgroundColor: isDark ? '#1C1A18' : '#F6F3EE' },
+              ]}
+            >
+              {scannedImageUri ? (
+                <Image
+                  source={{ uri: scannedImageUri }}
+                  style={styles.scannerImage}
+                />
+              ) : (
+                <View style={styles.scannerPlaceholder}>
+                  <Text style={styles.scannerPlaceholderEmoji}>🧴</Text>
+                </View>
+              )}
+
+              {/* Viewfinder Corner Accents */}
+              <View style={[styles.cornerTL, { borderColor: colors.primary }]} />
+              <View style={[styles.cornerTR, { borderColor: colors.primary }]} />
+              <View style={[styles.cornerBL, { borderColor: colors.primary }]} />
+              <View style={[styles.cornerBR, { borderColor: colors.primary }]} />
+
+              {/* Laser Scanning Beam */}
+              <View
+                style={[
+                  styles.scannerLaserBeam,
+                  { backgroundColor: colors.primary },
+                ]}
+              />
+            </View>
+
+            {/* AI Status Text */}
+            <View style={styles.aiInfoSection}>
+              <View style={styles.aiSpinnerRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.aiTitle, { color: colors.textPrimary }]}>
+                  {t('aiAnalyzing')}
+                </Text>
+              </View>
+
+              <Text style={[styles.aiSubtitle, { color: colors.textSecondary }]}>
+                {t('aiAnalyzingSub')}
+              </Text>
+
+              <View
+                style={[
+                  styles.aiPillBadge,
+                  {
+                    backgroundColor: isDark ? '#23332A' : '#E8F1EB',
+                    borderColor: isDark ? '#2D4437' : '#D0E3D6',
+                  },
+                ]}
+              >
+                <Text style={[styles.aiPillBadgeText, { color: colors.secondary }]}>
+                  ✨ AI Auto-Categorization
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* Subtle Edit Product Modal                                 */}
+      {/* ======================================================== */}
+      <Modal
+        visible={isEditModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsModalVisible(false)}
+        onRequestClose={() => setIsEditModalVisible(false)}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -533,17 +763,14 @@ export default function CabinetScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalEyebrow, { color: colors.primary }]}>
-                  {t('newAddition')}
+                  {t('editProduct')}
                 </Text>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                  {t('newProductTitle')}
+                  {editingProduct?.name || t('editProduct')}
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => {
-                  resetForm();
-                  setIsModalVisible(false);
-                }}
+                onPress={() => setIsEditModalVisible(false)}
                 style={styles.modalCloseButton}
               >
                 <Text style={[styles.modalCloseText, { color: colors.textSecondary }]}>
@@ -569,8 +796,8 @@ export default function CabinetScreen() {
                   ]}
                   placeholder={t('productNamePlaceholder')}
                   placeholderTextColor={colors.textMuted}
-                  value={name}
-                  onChangeText={setName}
+                  value={editName}
+                  onChangeText={setEditName}
                   autoCapitalize="words"
                 />
               </View>
@@ -591,8 +818,8 @@ export default function CabinetScreen() {
                   ]}
                   placeholder={t('brandPlaceholder')}
                   placeholderTextColor={colors.textMuted}
-                  value={brand}
-                  onChangeText={setBrand}
+                  value={editBrand}
+                  onChangeText={setEditBrand}
                   autoCapitalize="words"
                 />
               </View>
@@ -608,7 +835,7 @@ export default function CabinetScreen() {
 
                 <View style={styles.categoryGrid}>
                   {PRIMARY_CATEGORIES.map(cat => {
-                    const isSelected = category === cat.key;
+                    const isSelected = editCategory === cat.key;
                     return (
                       <TouchableOpacity
                         key={cat.key}
@@ -623,7 +850,7 @@ export default function CabinetScreen() {
                               : colors.border,
                           },
                         ]}
-                        onPress={() => setCategory(cat.key)}
+                        onPress={() => setEditCategory(cat.key)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.catOptionHeader}>
@@ -671,41 +898,6 @@ export default function CabinetScreen() {
                 </View>
               </View>
 
-              {/* Opened Date Input */}
-              <View style={styles.inputGroup}>
-                <View style={styles.labelWithActionRow}>
-                  <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
-                    {t('openedDate')} <Text style={{ color: colors.primary }}>*</Text>
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setOpenedDate(getTodayFormatted())}
-                    style={styles.todayButton}
-                  >
-                    <Text style={[styles.todayButtonText, { color: colors.primary }]}>
-                      {t('setToToday')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    {
-                      backgroundColor: isDark ? '#262421' : '#F9F7F3',
-                      borderColor: colors.border,
-                      color: colors.textPrimary,
-                    },
-                  ]}
-                  placeholder="YYYY-MM-DD (e.g. 2026-11-04)"
-                  placeholderTextColor={colors.textMuted}
-                  value={openedDate}
-                  onChangeText={setOpenedDate}
-                />
-                <Text style={[styles.dateHint, { color: colors.textMuted }]}>
-                  {t('paoHint')}
-                </Text>
-              </View>
-
               {/* Action Buttons */}
               <View style={styles.modalActionRow}>
                 <TouchableOpacity
@@ -713,10 +905,7 @@ export default function CabinetScreen() {
                     styles.modalCancelButton,
                     { borderColor: colors.border },
                   ]}
-                  onPress={() => {
-                    resetForm();
-                    setIsModalVisible(false);
-                  }}
+                  onPress={() => setIsEditModalVisible(false)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>
@@ -729,14 +918,14 @@ export default function CabinetScreen() {
                     styles.modalSaveButton,
                     { backgroundColor: colors.primary },
                   ]}
-                  onPress={handleSaveProduct}
-                  disabled={isSubmitting}
+                  onPress={handleSaveEdit}
+                  disabled={isSubmittingEdit}
                   activeOpacity={0.85}
                 >
-                  {isSubmitting ? (
+                  {isSubmittingEdit ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.modalSaveText}>{t('saveProduct')}</Text>
+                    <Text style={styles.modalSaveText}>{t('saveChanges')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -795,6 +984,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   pillsContainer: {
     gap: 8,
@@ -948,15 +1147,149 @@ const styles = StyleSheet.create({
   productBrand: {
     fontSize: 12,
   },
-  deleteButton: {
+  productThumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  cardActionsCol: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  actionIconButton: {
     width: 28,
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 14,
   },
   deleteIconText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  /* AI Vision Scanner Overlay */
+  aiOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  aiModalCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  scannerFrame: {
+    width: 180,
+    height: 180,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  scannerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  scannerPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scannerPlaceholderEmoji: {
+    fontSize: 50,
+  },
+  cornerTL: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 18,
+    height: 18,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 4,
+  },
+  cornerTR: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderTopRightRadius: 4,
+  },
+  cornerBL: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    width: 18,
+    height: 18,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: 4,
+  },
+  cornerBR: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 4,
+  },
+  scannerLaserBeam: {
+    position: 'absolute',
+    top: '49%',
+    left: 8,
+    right: 8,
+    height: 2,
+    opacity: 0.85,
+    borderRadius: 1,
+  },
+  aiInfoSection: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  aiSpinnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  aiSubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    maxWidth: 240,
+  },
+  aiPillBadge: {
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+  },
+  aiPillBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,

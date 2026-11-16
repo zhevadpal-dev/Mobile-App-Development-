@@ -81,6 +81,8 @@ export interface Product {
   orderWeight?: number;
   /** Period After Opening (PAO) in months before expiry (e.g., 6, 12) */
   periodAfterOpeningMonths?: number;
+  /** Local image URI if captured via camera/scanner */
+  imageUri?: string;
   /** Calculated or user-provided expiration date (YYYY-MM-DD) */
   expirationDate?: string;
   /** Optional user notes or usage instructions */
