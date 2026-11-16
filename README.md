@@ -23,12 +23,13 @@
 - [Design Philosophy & Luxury Visual Identity](#-design-philosophy--luxury-visual-identity)
 - [Feature Walkthrough](#-feature-walkthrough)
   - [1. 3-Step Swipeable Onboarding](#1--3-step-swipeable-onboarding)
-  - [2. Digital Product Cabinet & Sorting Algorithm](#2--digital-product-cabinet--sorting-algorithm)
-  - [3. Time-Aware AM/PM Routine Checklist](#3--time-aware-ampm-routine-checklist)
+  - [2. Advanced Digital Cabinet (AI Scan & Manual Entry)](#2--advanced-digital-cabinet-ai-scan--manual-entry)
+  - [3. Time-Aware AM/PM Routine & Smart UV Widget](#3--time-aware-ampm-routine--smart-uv-widget)
   - [4. Skin Diary & Dynamic Smart Tips](#4--skin-diary--dynamic-smart-tips)
   - [5. Calendar History & Streak Gamification](#5--calendar-history--streak-gamification)
-  - [6. Authentication & Custom Profile Studio](#6--authentication--custom-profile-studio)
+  - [6. Enhanced Profile Management & Global Avatar System](#6--enhanced-profile-management--global-avatar-system)
   - [7. Bilingual Localization (EN / TR)](#7--bilingual-localization-en--tr)
+  - [8. Refined UI/UX & Luxury Minimalist Aesthetics](#8--refined-uiux--luxury-minimalist-aesthetics)
 - [Application Ordering Logic](#-application-ordering-logic)
 - [Technical Architecture & State Management](#-technical-architecture--state-management)
 - [Data Storage Schema](#-data-storage-schema-asyncstorage)
@@ -91,19 +92,24 @@ A welcoming, distraction-free introductory experience for first-time users befor
   - **Step 3 (`sparkles-outline`):** *Skin Diary* — Introduces emoji logging and habit tracking.
 - **Interactive Controls:** Dynamic pagination pills (active dot expands into a terracotta/sage capsule), top-right **Skip** shortcut, and a prominent **Get Started →** button on the final slide.
 
-### 2. 🧴 Digital Product Cabinet & Sorting Algorithm
-The central inventory hub for all skincare products:
-- **Intelligent Sorting Hierarchy:** Arranges all saved products from **thinnest formulation to thickest occlusion** (Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks/Oils).
+### 2. 🧴 Advanced Digital Cabinet (AI Scan & Manual Entry)
+The central inventory hub for all skincare products, combining automated intelligence with manual control:
+- **Advanced Digital Cabinet:** A sleek product management system featuring simulated AI product scanning via camera, manual entry fallbacks, and full edit capabilities.
+- **Simulated AI Vision Auto-Categorization:** Taking a photo opens a sleek full-screen scanning overlay with animated corner brackets, a laser beam, and `'Yapay Zeka Analiz Ediyor...'` status. A 2000ms simulation processes the image, automatically predicting product name, brand, and category, and pairs it with the captured photo thumbnail in the cabinet grid.
+- **Minimalist Circular '+' Action Menu:** Replaced bulky buttons with an elegant circular icon-only trigger that opens a native Action Sheet (or styled bottom sheet) with `'Scan with AI (Camera)'`, `'Add Manually'`, and `'Cancel'`.
+- **Manual Entry Fallback:** Clean modal with text inputs for product name, brand, category picker, and an optional image picker with an elegant category icon placeholder if no photo is taken.
+- **Full Product Editing:** Subtle pencil icon (`pencil-outline`) on each product card allows users to update product names, modify categories, or replace/remove photos at any time.
+- **Intelligent Sorting Hierarchy:** Arranges all saved cosmetics from **thinnest formulation to thickest occlusion** (Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks/Oils).
 - **Period-After-Opening (PAO) Tracker:** Logs the exact date each product was opened (`Opened Date`) and formats it in a subtle badge (e.g., `Açılış: 4 Kas 2026`), assisting users in monitoring cosmetic shelf-life and active ingredient degradation.
 - **Quick Category Filtering:** Horizontal filter pills (`All`, `Cleanser`, `Toner`, `Serum`, `Moisturizer`, `Sunscreen`, `Masks`) allow instant sorting and isolation of specific ritual steps.
-- **Modal Addition Form:** Clean bottom-sheet modal for registering new items with product name, optional brand, category order badges (`#1` through `#7`), and a single-tap `Set to Today` button for open dates.
 
-### 3. ☀️/🌙 Time-Aware AM/PM Routine Checklist
-A dedicated checklist guiding users through their morning and evening applications:
+### 3. ☀️/🌙 Time-Aware AM/PM Routine & Smart UV Widget
+A dedicated ritual checklist guiding users through their morning and evening applications:
+- **Smart UV & Weather Widget:** A contextual, minimalist thermometer widget that appears exclusively during the Morning Routine to provide quick weather and sun protection insights (e.g., `24°C • UV 6 • Bugün güneş kremi şart!`).
+- **Interactive Sunscreen Recommendation Modal:** Tapping the compact morning widget opens an in-depth modal displaying real-time UV index classifications, SPF 30+/50+ guidelines, and photo-damage prevention tips.
+- **Contextual Morning-Only Rendering:** Automatically hides during the Evening Routine, leaving the space clean and distraction-free above the night-time ritual checklist.
 - **Automatic Time Detection:** Automatically defaults to the **Morning Routine (AM)** between 05:00 AM and 04:59 PM, and shifts to the **Evening Routine (PM)** from 05:00 PM onwards.
-- **Real-Time Progress Meter:** Displays completed step ratios (e.g., `4 / 5 steps completed`) accompanied by a live percentage bar.
-- **Tactile Interaction:** Smooth checkbox toggles with subtle strikethrough feedback and state opacity adjustments.
-- **Ritual Completion Gate:** The primary action button remains locked until all steps are marked, unlocking as `✨ Routine Completed! Log Skin` and routing the user directly into the Diary for post-routine reflection.
+- **Tactile Interaction & Gate:** Smooth checkbox toggles with subtle strikethrough feedback. The completion CTA routes users directly into the Skin Diary upon finishing all steps.
 
 ### 4. ✨ Skin Diary & Dynamic Smart Tips
 Enables users to evaluate daily skincare efficacy and log skin barrier status in seconds:
@@ -126,22 +132,25 @@ Visualizing historical skincare data to reinforce daily consistency:
 - **Interactive Archive Inspection:** Tapping any past date with an indicator opens a card revealing the historical condition, journal note, and specific Smart Tip issued on that day.
 - **Record Management:** Full chronological history feed with individual entry deletion capabilities.
 
-### 6. 👤 Authentication & Custom Profile Studio
-A complete authentication and identity workflow:
+### 6. 👤 Enhanced Profile Management & Global Avatar System
+A comprehensive authentication, identity, and customization studio:
+- **Global Avatar System:** A unified customization modal allowing users to select cute animal avatars (🧸, 🐱, 🐼, 🐰, 🐶, 🦊) and pastel background colors (sage, cream, soft pink, lavender, peach), perfectly synced across the Home and Profile screens via global storage.
+- **Enhanced Profile Management:** Native camera and gallery integration (`expo-image-picker`) for uploading real profile photos, integrated with a clean action menu (Take a Photo, Choose from Gallery, Choose Cute Avatar, Cancel).
+- **State Priority Rendering:** Seamlessly displays the actual uploaded photo (`photoUri`) or falls back to the user's customized cute avatar and pastel background color.
+- **Header Avatar Navigation:** Tapping the profile avatar on the HomeScreen header smoothly navigates directly to the full Profile and Settings studio.
 - **Minimalist Auth Screens:** Elegant `LoginScreen` and `SignUpScreen` with the 3D lotus emblem, smooth password reveal/hide toggles, validation banners, and a single-tap **Quick Demo Sign-In (Zeynep)** for seamless testing.
-- **Profile Studio (`SettingsScreen`):**
-  - **Editable Profile Name:** Real-time dirty-state tracking with an `Unsaved` badge and save button.
-  - **Camera & Gallery Photo Upload:** Integrated with `expo-image-picker` (`launchCameraAsync`, `launchImageLibraryAsync`) with graceful permission handling.
-  - **Aesthetic Avatar Library:** Direct selection from 8 curated minimalist avatars:
-    - 🌿 *Botanical* | ✨ *Radiance* | 🌸 *Blossom* | 🧸 *Cozy Bear*
-    - 🫧 *Gentle Mist* | 🍵 *Matcha Tea* | 🍯 *Honey Glow* | 🥑 *Nourish*
-  - **Reactive Header Bubble:** The global navigation bar instantly reflects the uploaded photo, chosen avatar, or user initial.
+- **Editable Profile Name:** Real-time dirty-state tracking with an `Unsaved` badge and save button.
 
 ### 7. 🌐 Bilingual Localization (EN / TR)
 Full internationalization supporting global and domestic users:
 - **Instant Language Toggle:** Easily switch between 🇬🇧 **English** and 🇹🇷 **Turkish** inside the Settings menu.
 - **Comprehensive String Coverage:** Over 200 localized keys covering all buttons, placeholders, validation alerts, calendar months, days of the week, and dermatological tips.
 - **Strict Brand Rule Enforcement:** The trademark brand name **`Skin Diary`** is strictly preserved in its original form across all locales and headers.
+
+### 8. 🎨 Refined UI/UX & Luxury Minimalist Aesthetics
+- **Refined UI/UX:** Minimalist typography updates and decluttered interfaces to maintain the app's premium, luxury aesthetic.
+- **Softer Typography & Direct Messaging:** Softened greeting typography on the home header and streamlined welcome copy (`Skin Diary'ye Hoş Geldin` / `Welcome to Skin Diary`) for a more direct, elegant feel.
+- **Minimalist Controls & Balanced Spacing:** Replaced bulky buttons with sleek circular vector triggers (`+` button), subtle pencil edit icons on product cards, and balanced negative space tailored for an uncluttered ritual experience.
 
 ---
 
@@ -213,6 +222,7 @@ export interface Product {
   category: ProductCategory;// 'cleanser' | 'toner' | 'serum' | 'moisturizer' | 'sunscreen' | 'masks_treatments' | 'facial_oil'
   openedDate: string;       // ISO Date: 'YYYY-MM-DD'
   orderWeight: number;      // Dermatological hierarchy weight (1 to 7)
+  imageUri?: string;        // Local photo URI from AI camera scan or gallery upload
 }
 
 // Key: '@skin_diary_skin_logs'
@@ -233,7 +243,8 @@ export interface UserProfile {
   id: string;               // User identifier
   name: string;             // Display name
   email: string;            // User email
-  photoUri?: string;        // Local file URI or 'avatar:🌸'
+  photoUri?: string;        // Local file URI or 'avatar:🧸'
+  avatarBgColor?: string;   // Pastel background tone for avatar preview
 }
 ```
 
@@ -268,6 +279,7 @@ Mobile-App-Development/
 │   └── favicon.png              # Web favicon
 └── src/
     ├── components/              # Shared UI components
+    │   ├── AvatarPickerModal.tsx# Unified cute avatar & pastel color picker modal
     │   └── ThemeToggle.tsx      # Reusable minimalist Dark/Light mode toggle button
     ├── constants/               # Design tokens & translations
     │   ├── theme.ts             # Palette (cream, sand, terracotta, sage), typography, spacing
@@ -284,10 +296,11 @@ Mobile-App-Development/
     │   ├── OnboardingScreen.tsx # 3-step swipable introduction with Ionicons badges
     │   ├── LoginScreen.tsx      # Luxury sign-in with lotus hero & demo fill
     │   ├── SignUpScreen.tsx     # Account registration view
-    │   ├── RoutineScreen.tsx    # Time-aware AM/PM checklist & live progress bar
-    │   ├── CabinetScreen.tsx    # Viscosity-sorted product cabinet & PAO tracker
+    │   ├── HomeScreen.tsx       # Morning greeting, ritual CTA & quick shortcuts
+    │   ├── RoutineScreen.tsx    # AM/PM checklist & contextual morning UV widget
+    │   ├── CabinetScreen.tsx    # AI product scan, manual entry & PAO tracker
     │   ├── DiaryScreen.tsx      # Emoji check-in, Smart Tips & calendar history
-    │   └── SettingsScreen.tsx   # Avatar picker studio, language switch & logout
+    │   └── SettingsScreen.tsx   # Avatar picker studio, action menu & language switch
     ├── services/                # Local data storage abstraction
     │   ├── productStorage.ts    # AsyncStorage CRUD for skincare products
     │   └── skinLogStorage.ts    # AsyncStorage CRUD for daily diary logs
