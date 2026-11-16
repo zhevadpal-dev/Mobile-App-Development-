@@ -13,7 +13,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { RootTabParamList, MainStackParamList } from '../types/navigation';
-import AvatarPickerModal from '../components/AvatarPickerModal';
 
 /**
  * Determine dynamic greeting based on device's current local hour:
@@ -50,9 +49,6 @@ export default function HomeScreen() {
     return 'Zeynep';
   });
 
-  // Global avatar states synchronized via AuthContext
-  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState<boolean>(false);
-
   const photoUri = user?.photoUri;
   const isAvatarEmoji = photoUri?.startsWith('avatar:');
   const avatarEmoji = isAvatarEmoji && photoUri
@@ -84,8 +80,8 @@ export default function HomeScreen() {
     }
   }, [user?.name]);
 
-  const handleOpenAvatarModal = () => {
-    setIsAvatarModalVisible(true);
+  const handleOpenProfile = () => {
+    navigation.navigate('Settings');
   };
 
   const userInitial = firstName ? firstName.charAt(0).toUpperCase() : 'Z';
@@ -106,7 +102,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Top Right: Interactive Profile Avatar Customizer */}
+        {/* Top Right: Profile Avatar -> Navigates to Settings/Profile Screen */}
         <TouchableOpacity
           style={[
             styles.avatarButton,
@@ -115,9 +111,9 @@ export default function HomeScreen() {
               borderColor: colors.primary,
             },
           ]}
-          onPress={handleOpenAvatarModal}
+          onPress={handleOpenProfile}
           activeOpacity={0.75}
-          accessibilityLabel="Customize avatar"
+          accessibilityLabel="Open settings and profile"
         >
           {avatarEmoji ? (
             <Text style={styles.avatarEmojiText}>{avatarEmoji}</Text>
@@ -218,14 +214,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
-
-      {/* ======================================================== */}
-      {/* Unified Reusable Avatar Picker Modal                    */}
-      {/* ======================================================== */}
-      <AvatarPickerModal
-        visible={isAvatarModalVisible}
-        onClose={() => setIsAvatarModalVisible(false)}
-      />
     </SafeAreaView>
   );
 }
