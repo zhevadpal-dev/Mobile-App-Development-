@@ -77,7 +77,6 @@ export default function RoutineScreen() {
   };
 
   const completedCount = steps.filter(s => s.completed).length;
-  const progressPercent = Math.round((completedCount / steps.length) * 100);
 
   const handleCompleteRoutine = () => {
     if (completedCount === steps.length) {
@@ -91,23 +90,6 @@ export default function RoutineScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>{t('routineTitle')}</Text>
-          <TouchableOpacity
-            style={[
-              styles.uvTriggerPill,
-              {
-                backgroundColor: isDark ? '#1C261F' : '#F2F6F3',
-                borderColor: isDark ? '#2D3E31' : '#E2EBE4',
-              },
-            ]}
-            onPress={() => setIsUvModalVisible(true)}
-            activeOpacity={0.8}
-            accessibilityLabel="View weather and UV recommendations"
-          >
-            <Ionicons name="thermometer-outline" size={15} color={colors.accent} />
-            <Text style={[styles.uvTriggerText, { color: colors.secondary }]}>
-              24°C • UV 6
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* AM / PM Routine Toggle */}
@@ -172,38 +154,50 @@ export default function RoutineScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Progress Card */}
-        <View
-          style={[
-            styles.progressCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.cardBorder,
-            },
-          ]}
-        >
-          <View style={styles.progressHeader}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
-              {completedCount} / {steps.length} {t('stepsCompleted')}
-            </Text>
-            <Text style={[styles.progressPercent, { color: colors.primary }]}>
-              {progressPercent}%
-            </Text>
-          </View>
-          <View
+        {/* Contextual UV Widget (Morning Routine only) */}
+        {activeRoutine === 'AM' && (
+          <TouchableOpacity
             style={[
-              styles.progressBarTrack,
-              { backgroundColor: isDark ? '#2E2B27' : '#F0ECE6' },
+              styles.compactUvWidget,
+              {
+                backgroundColor: isDark ? '#1C261F' : '#F2F6F3',
+                borderColor: isDark ? '#2D3E31' : '#DFEAE2',
+              },
             ]}
+            onPress={() => setIsUvModalVisible(true)}
+            activeOpacity={0.75}
+            accessibilityLabel="View weather and UV recommendations"
           >
             <View
               style={[
-                styles.progressBarFill,
-                { width: `${progressPercent}%`, backgroundColor: colors.primary },
+                styles.compactUvIconBox,
+                { backgroundColor: isDark ? '#26362B' : '#E3EDE6' },
               ]}
+            >
+              <Ionicons name="sunny" size={15} color={colors.secondary} />
+            </View>
+
+            <View style={styles.compactUvContent}>
+              <Text style={[styles.compactUvIndexText, { color: colors.secondary }]}>
+                {t('uvIndexLabel')} 6
+              </Text>
+              <Text style={[styles.compactUvDot, { color: colors.textMuted }]}>•</Text>
+              <Text
+                style={[styles.compactUvReminderText, { color: colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {t('sunscreenRecommendation')}
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.secondary}
+              style={styles.compactUvChevron}
             />
-          </View>
-        </View>
+          </TouchableOpacity>
+        )}
 
         {/* Step-by-Step Checklist */}
         <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
@@ -454,29 +448,7 @@ const styles = StyleSheet.create({
   },
   /* Header Layout */
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: SPACING.xs,
-  },
-  uvTriggerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  uvTriggerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.2,
   },
   /* Modal Styles */
   modalOverlay: {
@@ -623,34 +595,44 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
   },
-  progressCard: {
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    borderWidth: 1,
-    marginBottom: SPACING.lg,
-  },
-  progressHeader: {
+  compactUvWidget: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+    gap: 10,
   },
-  progressLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+  compactUvIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  progressPercent: {
-    fontSize: 13,
+  compactUvContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  compactUvIndexText: {
+    fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  progressBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
+  compactUvDot: {
+    fontSize: 12,
   },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
+  compactUvReminderText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  compactUvChevron: {
+    opacity: 0.7,
   },
   sectionHeading: {
     fontSize: 15,
