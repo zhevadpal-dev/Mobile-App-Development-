@@ -5,39 +5,15 @@ import {
   View,
   TouchableOpacity,
   SafeAreaView,
-  Modal,
-  ScrollView,
+  Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { RootTabParamList, MainStackParamList } from '../types/navigation';
-
-/**
- * Cute Animal Emojis available for avatar personalization
- */
-const CUTE_ANIMAL_EMOJIS = ['🧸', '🐱', '🐼', '🐰', '🐶', '🦊', '🐨', '🐣'];
-
-interface PastelColorOption {
-  id: string;
-  name: string;
-  color: string;
-}
-
-/**
- * Soft, premium pastel background color swatches
- */
-const getPastelColorSwatches = (isDark: boolean): PastelColorOption[] => [
-  { id: 'default', name: 'Classic', color: isDark ? '#2D221D' : '#FBECE8' },
-  { id: 'sage', name: 'Sage', color: '#DCE8DE' },
-  { id: 'cream', name: 'Cream', color: '#F7F2E7' },
-  { id: 'softPink', name: 'Soft Pink', color: '#FCE6EB' },
-  { id: 'lavender', name: 'Lavender', color: '#EBE5F7' },
-  { id: 'peach', name: 'Peach', color: '#FCE8D5' },
-];
+import AvatarPickerModal from '../components/AvatarPickerModal';
 
 /**
  * Determine dynamic greeting based on device's current local hour:
@@ -57,7 +33,7 @@ const getGreetingKey = (hour: number): 'goodMorning' | 'goodAfternoon' | 'goodEv
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const navigation = useNavigation<NavigationProp<MainStackParamList & RootTabParamList>>();
 
@@ -74,23 +50,17 @@ export default function HomeScreen() {
     return 'Zeynep';
   });
 
-  // Default avatar background color matching the theme
-  const defaultBgColor = isDark ? '#2D221D' : '#FBECE8';
-
-  // Interactive Avatar Customizer state variables
-  const [avatarEmoji, setAvatarEmoji] = useState<string>(() => {
-    if (user?.photoUri?.startsWith('avatar:')) {
-      const savedEmoji = user.photoUri.replace('avatar:', '');
-      if (savedEmoji) return savedEmoji;
-    }
-    return '🧸';
-  });
-  const [avatarBgColor, setAvatarBgColor] = useState<string>(defaultBgColor);
+  // Global avatar states synchronized via AuthContext
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState<boolean>(false);
 
-  // Temporary selection state within the customization modal
-  const [selectedEmoji, setSelectedEmoji] = useState<string>(avatarEmoji);
-  const [selectedBgColor, setSelectedBgColor] = useState<string>(avatarBgColor);
+  const photoUri = user?.photoUri;
+  const isAvatarEmoji = photoUri?.startsWith('avatar:');
+  const avatarEmoji = isAvatarEmoji && photoUri
+    ? photoUri.replace('avatar:', '')
+    : photoUri
+    ? null
+    : '🧸';
+  const avatarBgColor = user?.avatarBgColor || (isDark ? '#2D221D' : '#FBECE8');
 
   // Keep dynamic greeting updated as time advances
   useEffect(() => {
@@ -115,25 +85,10 @@ export default function HomeScreen() {
   }, [user?.name]);
 
   const handleOpenAvatarModal = () => {
-    setSelectedEmoji(avatarEmoji);
-    setSelectedBgColor(avatarBgColor);
     setIsAvatarModalVisible(true);
   };
 
-  const handleCloseAvatarModal = () => {
-    setIsAvatarModalVisible(false);
-  };
-
-  const handleSaveAvatar = async () => {
-    setAvatarEmoji(selectedEmoji);
-    setAvatarBgColor(selectedBgColor);
-    setIsAvatarModalVisible(false);
-    try {
-      await updateProfile({ photoUri: `avatar:${selectedEmoji}` });
-    } catch (e) {
-      console.warn('Could not persist avatar to profile:', e);
-    }
-  };
+  const userInitial = firstName ? firstName.charAt(0).toUpperCase() : 'Z';
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -164,7 +119,15 @@ export default function HomeScreen() {
           activeOpacity={0.75}
           accessibilityLabel="Customize avatar"
         >
-          <Text style={styles.avatarEmojiText}>{avatarEmoji}</Text>
+          {avatarEmoji ? (
+            <Text style={styles.avatarEmojiText}>{avatarEmoji}</Text>
+          ) : photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+          ) : (
+            <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
+              {userInitial}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -257,154 +220,12 @@ export default function HomeScreen() {
       </View>
 
       {/* ======================================================== */}
-      {/* Interactive Avatar Customizer Modal                     */}
+      {/* Unified Reusable Avatar Picker Modal                    */}
       {/* ======================================================== */}
-      <Modal
+      <AvatarPickerModal
         visible={isAvatarModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleCloseAvatarModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.cardBorder,
-              },
-            ]}
-          >
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalTitleRow}>
-                <Text style={styles.modalHeaderEmoji}>✨</Text>
-                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                  {t('customizeAvatar')}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleCloseAvatarModal}
-                style={styles.modalCloseBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityLabel="Close modal"
-              >
-                <Ionicons name="close" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Live Avatar Preview */}
-            <View style={styles.previewSection}>
-              <View
-                style={[
-                  styles.previewAvatarCircle,
-                  {
-                    backgroundColor: selectedBgColor,
-                    borderColor: colors.primary,
-                  },
-                ]}
-              >
-                <Text style={styles.previewAvatarEmoji}>{selectedEmoji}</Text>
-              </View>
-            </View>
-
-            {/* Emoji Selection */}
-            <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>
-              {t('chooseEmoji')}
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.emojiScrollContainer}
-            >
-              {CUTE_ANIMAL_EMOJIS.map(emoji => {
-                const isSelected = selectedEmoji === emoji;
-                return (
-                  <TouchableOpacity
-                    key={emoji}
-                    style={[
-                      styles.emojiCard,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.primaryLight
-                          : isDark
-                          ? '#262320'
-                          : '#F9F7F4',
-                        borderColor: isSelected ? colors.primary : colors.cardBorder,
-                      },
-                    ]}
-                    onPress={() => setSelectedEmoji(emoji)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={styles.emojiText}>{emoji}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Background Color Selection */}
-            <Text
-              style={[
-                styles.sectionHeading,
-                { color: colors.textSecondary, marginTop: SPACING.md },
-              ]}
-            >
-              {t('chooseBgColor')}
-            </Text>
-            <View style={styles.swatchesRow}>
-              {getPastelColorSwatches(isDark).map(swatch => {
-                const isSelected = selectedBgColor === swatch.color;
-                return (
-                  <TouchableOpacity
-                    key={swatch.id}
-                    style={[
-                      styles.swatchTouchTarget,
-                      isSelected && { borderColor: colors.primary },
-                    ]}
-                    onPress={() => setSelectedBgColor(swatch.color)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={swatch.name}
-                  >
-                    <View
-                      style={[
-                        styles.swatchCircle,
-                        {
-                          backgroundColor: swatch.color,
-                          borderColor: isSelected
-                            ? 'transparent'
-                            : isDark
-                            ? '#3D3833'
-                            : '#E3DDD5',
-                        },
-                      ]}
-                    >
-                      {isSelected && (
-                        <Ionicons
-                          name="checkmark"
-                          size={15}
-                          color={swatch.id === 'default' && isDark ? '#FFFFFF' : colors.primary}
-                        />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Save / Done CTA */}
-            <TouchableOpacity
-              style={[
-                styles.modalSaveButton,
-                { backgroundColor: colors.primary },
-              ]}
-              onPress={handleSaveAvatar}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.modalSaveButtonText}>{t('done')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setIsAvatarModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -451,144 +272,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarInitialText: {
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   avatarEmojiText: {
     fontSize: 22,
     textAlign: 'center',
     includeFontPadding: false,
-  },
-  /* Avatar Customizer Modal Styles */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.lg,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalHeaderEmoji: {
-    fontSize: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewSection: {
-    alignItems: 'center',
-    marginVertical: SPACING.sm,
-  },
-  previewAvatarCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  previewAvatarEmoji: {
-    fontSize: 36,
-    textAlign: 'center',
-    includeFontPadding: false,
-  },
-  sectionHeading: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: SPACING.xs,
-    textTransform: 'uppercase',
-  },
-  emojiScrollContainer: {
-    gap: 10,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-  },
-  emojiCard: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emojiText: {
-    fontSize: 26,
-    textAlign: 'center',
-    includeFontPadding: false,
-  },
-  swatchesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  swatchTouchTarget: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  swatchCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  modalSaveButton: {
-    height: 48,
-    borderRadius: RADIUS.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: SPACING.lg,
-  },
-  modalSaveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
   },
   /* Center Wrapper: Vertically centers card in remaining space */
   cardCenterWrapper: {

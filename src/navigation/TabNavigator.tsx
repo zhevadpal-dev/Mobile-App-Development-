@@ -67,7 +67,7 @@ export default function TabNavigator() {
             style={[
               styles.avatarButton,
               {
-                backgroundColor: isDark ? '#3A231C' : '#FBECE8',
+                backgroundColor: user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8'),
                 borderColor: colors.primary,
               },
             ]}
@@ -81,9 +81,7 @@ export default function TabNavigator() {
             ) : user?.photoUri ? (
               <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
-                {userInitial}
-              </Text>
+              <Text style={styles.avatarEmojiText}>🧸</Text>
             )}
           </TouchableOpacity>
         ),

@@ -4,6 +4,7 @@ export interface User {
   email: string;
   createdAt: number;
   photoUri?: string;
+  avatarBgColor?: string;
 }
 
 export interface StoredUserAccount extends User {

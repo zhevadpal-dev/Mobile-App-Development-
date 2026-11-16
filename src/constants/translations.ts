@@ -231,11 +231,15 @@ export const TRANSLATIONS = {
     avatarBotanical: 'Botanical',
     avatarRadiance: 'Radiance',
     avatarBlossom: 'Blossom',
-    avatarBear: 'Cozy Bear',
+    avatarBear: 'Cute Bear',
     avatarBubbles: 'Gentle Mist',
-    avatarMatcha: 'Matcha Tea',
+    avatarMatcha: 'Matcha',
     avatarHoney: 'Honey Glow',
     avatarBarrier: 'Nourish',
+    avatarKitten: 'Kitten',
+    avatarBunny: 'Bunny',
+    avatarPanda: 'Panda',
+    avatarPuppy: 'Puppy',
 
     // Onboarding Screen
     onboardingSkip: 'Skip',
@@ -501,12 +505,16 @@ export const TRANSLATIONS = {
     // Cute Avatar Labels
     avatarBotanical: 'Botanik',
     avatarRadiance: 'Işıltı',
-    avatarBlossom: 'Çiçek',
+    avatarBlossom: 'Bahar Çiçeği',
     avatarBear: 'Sevimli Ayı',
     avatarBubbles: 'Hafif Sis',
-    avatarMatcha: 'Matcha Çayı',
+    avatarMatcha: 'Matcha',
     avatarHoney: 'Bal Işıltısı',
     avatarBarrier: 'Besleyici',
+    avatarKitten: 'Yavru Kedi',
+    avatarBunny: 'Tavşan',
+    avatarPanda: 'Panda',
+    avatarPuppy: 'Yavru Köpek',
 
     // Onboarding Screen
     onboardingSkip: 'Atla',

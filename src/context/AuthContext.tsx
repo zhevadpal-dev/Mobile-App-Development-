@@ -16,7 +16,11 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   signUp: (credentials: SignUpCredentials) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (updates: { name?: string; photoUri?: string | null }) => Promise<void>;
+  updateProfile: (updates: {
+    name?: string;
+    photoUri?: string | null;
+    avatarBgColor?: string | null;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,7 +68,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const updateProfile = useCallback(
-    async (updates: { name?: string; photoUri?: string | null }) => {
+    async (updates: {
+      name?: string;
+      photoUri?: string | null;
+      avatarBgColor?: string | null;
+    }) => {
       const updatedUser = await updateStoredUserProfile(updates);
       setUser(updatedUser);
     },

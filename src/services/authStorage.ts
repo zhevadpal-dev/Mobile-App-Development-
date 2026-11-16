@@ -11,6 +11,9 @@ const AUTH_TOKEN_KEY = '@skin_diary_auth_token';
 const AUTH_USER_KEY = '@skin_diary_auth_user';
 const MOCK_ACCOUNTS_KEY = '@skin_diary_mock_accounts';
 
+export const AVATAR_EMOJI_STORAGE_KEY = '@skin_diary_avatar_emoji';
+export const AVATAR_BG_COLOR_STORAGE_KEY = '@skin_diary_avatar_bg_color';
+
 /**
  * Pre-seeded demo user account for fast testing
  */
@@ -20,6 +23,8 @@ const DEFAULT_DEMO_ACCOUNT: StoredUserAccount = {
   email: 'zeynep@skindiary.com',
   password: 'password123',
   createdAt: 1714800000000,
+  photoUri: 'avatar:🧸',
+  avatarBgColor: '#FBECE8',
 };
 
 /**
@@ -190,11 +195,12 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 /**
- * Update current user profile (name and/or photoUri)
+ * Update current user profile (name, photoUri, and/or avatarBgColor)
  */
 export const updateStoredUserProfile = async (updates: {
   name?: string;
   photoUri?: string | null;
+  avatarBgColor?: string | null;
 }): Promise<User> => {
   const currentSession = await getStoredSession();
   if (!currentSession) {
@@ -207,10 +213,24 @@ export const updateStoredUserProfile = async (updates: {
     ...(updates.photoUri !== undefined
       ? { photoUri: updates.photoUri || undefined }
       : {}),
+    ...(updates.avatarBgColor !== undefined
+      ? { avatarBgColor: updates.avatarBgColor || undefined }
+      : {}),
   };
 
   // Update active session in AsyncStorage
   await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser));
+
+  // Sync standalone avatar keys if applicable
+  if (updates.photoUri && updates.photoUri.startsWith('avatar:')) {
+    await AsyncStorage.setItem(
+      AVATAR_EMOJI_STORAGE_KEY,
+      updates.photoUri.replace('avatar:', '')
+    );
+  }
+  if (updates.avatarBgColor) {
+    await AsyncStorage.setItem(AVATAR_BG_COLOR_STORAGE_KEY, updates.avatarBgColor);
+  }
 
   // Also update in registered mock accounts
   try {
@@ -221,6 +241,7 @@ export const updateStoredUserProfile = async (updates: {
           ...acc,
           name: updatedUser.name,
           photoUri: updatedUser.photoUri,
+          avatarBgColor: updatedUser.avatarBgColor,
         };
       }
       return acc;

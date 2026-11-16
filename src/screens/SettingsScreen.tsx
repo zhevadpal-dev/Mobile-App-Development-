@@ -21,23 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
-
-interface CuteAvatarOption {
-  key: string;
-  emoji: string;
-  labelKey: TranslationKey;
-}
-
-const CUTE_AVATARS: CuteAvatarOption[] = [
-  { key: 'botanical', emoji: '🌿', labelKey: 'avatarBotanical' },
-  { key: 'radiance', emoji: '✨', labelKey: 'avatarRadiance' },
-  { key: 'blossom', emoji: '🌸', labelKey: 'avatarBlossom' },
-  { key: 'bear', emoji: '🧸', labelKey: 'avatarBear' },
-  { key: 'bubbles', emoji: '🫧', labelKey: 'avatarBubbles' },
-  { key: 'matcha', emoji: '🍵', labelKey: 'avatarMatcha' },
-  { key: 'honey', emoji: '🍯', labelKey: 'avatarHoney' },
-  { key: 'barrier', emoji: '🥑', labelKey: 'avatarBarrier' },
-];
+import AvatarPickerModal from '../components/AvatarPickerModal';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
@@ -48,7 +32,7 @@ export default function SettingsScreen() {
   const [name, setName] = useState(user?.name || '');
   const [photoUri, setPhotoUri] = useState<string | undefined>(user?.photoUri);
   const [isSheetVisible, setIsSheetVisible] = useState(false);
-  const [sheetView, setSheetView] = useState<'menu' | 'avatars'>('menu');
+  const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [hasUnsavedNameChange, setHasUnsavedNameChange] = useState(false);
 
@@ -82,23 +66,7 @@ export default function SettingsScreen() {
   };
 
   const openSheet = () => {
-    setSheetView('menu');
     setIsSheetVisible(true);
-  };
-
-  /**
-   * 1. Choose Cute Avatar
-   */
-  const handleSelectCuteAvatar = async (emoji: string) => {
-    const avatarUri = `avatar:${emoji}`;
-    try {
-      setIsSheetVisible(false);
-      setPhotoUri(avatarUri);
-      await updateProfile({ photoUri: avatarUri });
-    } catch (error) {
-      console.error('Error saving avatar:', error);
-      Alert.alert(t('saveFailed'), t('couldNotUpdateAvatar'));
-    }
   };
 
   /**
@@ -198,7 +166,8 @@ export default function SettingsScreen() {
 
   const userInitial = (name || user?.name || 'Z').trim().charAt(0).toUpperCase();
   const isAvatarEmoji = photoUri?.startsWith('avatar:');
-  const avatarEmojiChar = isAvatarEmoji ? photoUri?.replace('avatar:', '') : null;
+  const avatarEmojiChar = isAvatarEmoji ? photoUri?.replace('avatar:', '') : '🧸';
+  const avatarBgColor = user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -242,7 +211,7 @@ export default function SettingsScreen() {
                   <View
                     style={[
                       styles.largeAvatarPlaceholder,
-                      { backgroundColor: isDark ? '#3A231C' : '#FBECE8' },
+                      { backgroundColor: avatarBgColor },
                     ]}
                   >
                     <Text style={styles.largeAvatarEmoji}>{avatarEmojiChar}</Text>
@@ -253,23 +222,21 @@ export default function SettingsScreen() {
                   <View
                     style={[
                       styles.largeAvatarPlaceholder,
-                      { backgroundColor: isDark ? '#3A231C' : '#FBECE8' },
+                      { backgroundColor: avatarBgColor },
                     ]}
                   >
-                    <Text style={[styles.largeAvatarInitial, { color: colors.primary }]}>
-                      {userInitial}
-                    </Text>
+                    <Text style={styles.largeAvatarEmoji}>🧸</Text>
                   </View>
                 )}
 
-                {/* Camera badge trigger */}
+                {/* Avatar customizer trigger */}
                 <TouchableOpacity
                   style={[styles.cameraBadge, { backgroundColor: colors.primary }]}
-                  onPress={openSheet}
+                  onPress={() => setIsAvatarPickerVisible(true)}
                   activeOpacity={0.8}
-                  accessibilityLabel="Edit profile photo"
+                  accessibilityLabel="Edit profile avatar"
                 >
-                  <Text style={styles.cameraBadgeIcon}>📷</Text>
+                  <Text style={styles.cameraBadgeIcon}>✨</Text>
                 </TouchableOpacity>
               </View>
 
@@ -565,9 +532,8 @@ export default function SettingsScreen() {
             {/* Sheet Handle Indicator */}
             <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
 
-            {sheetView === 'menu' ? (
-              /* Main Menu: Choose Avatar | Choose from Gallery | Take a Photo */
-              <View style={styles.sheetMenuContent}>
+            {/* Main Menu: Choose Avatar | Choose from Gallery | Take a Photo */}
+            <View style={styles.sheetMenuContent}>
                 <Text style={[styles.sheetTitle, { color: colors.textPrimary }]}>
                   {t('editPhoto')}
                 </Text>
@@ -585,7 +551,10 @@ export default function SettingsScreen() {
                         borderColor: colors.cardBorder,
                       },
                     ]}
-                    onPress={() => setSheetView('avatars')}
+                    onPress={() => {
+                      setIsSheetVisible(false);
+                      setIsAvatarPickerVisible(true);
+                    }}
                     activeOpacity={0.75}
                   >
                     <View
@@ -716,89 +685,17 @@ export default function SettingsScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            ) : (
-              /* Cute Avatars Grid */
-              <View style={styles.sheetMenuContent}>
-                <View style={styles.avatarHeaderRow}>
-                  <TouchableOpacity
-                    onPress={() => setSheetView('menu')}
-                    style={[
-                      styles.avatarBackBtn,
-                      { borderColor: isDark ? '#3D3A37' : '#E8E3DC' },
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.avatarBackText, { color: colors.textPrimary }]}>
-                      ← {t('back')}
-                    </Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.sheetTitle, { color: colors.textPrimary, marginBottom: 0 }]}>
-                    {t('cuteAvatars')}
-                  </Text>
-                  <View style={{ width: 60 }} />
-                </View>
-
-                <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>
-                  {t('avatarSheetSubtitle')}
-                </Text>
-
-                <View style={styles.cuteAvatarGrid}>
-                  {CUTE_AVATARS.map(item => {
-                    const isSelected = photoUri === `avatar:${item.emoji}`;
-                    return (
-                      <TouchableOpacity
-                        key={item.key}
-                        style={[
-                          styles.cuteAvatarCard,
-                          {
-                            backgroundColor: isSelected
-                              ? isDark ? '#3D2821' : colors.primaryLight
-                              : isDark ? '#23201D' : '#FAF8F5',
-                            borderColor: isSelected
-                              ? colors.primary
-                              : colors.cardBorder,
-                          },
-                        ]}
-                        onPress={() => handleSelectCuteAvatar(item.emoji)}
-                        activeOpacity={0.75}
-                      >
-                        <Text style={styles.cuteAvatarEmoji}>{item.emoji}</Text>
-                        <Text
-                          style={[
-                            styles.cuteAvatarLabel,
-                            {
-                              color: isSelected ? colors.primary : colors.textPrimary,
-                              fontWeight: isSelected ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          {t(item.labelKey)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Cancel Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.sheetCancelButton,
-                    { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
-                  ]}
-                  onPress={() => setIsSheetVisible(false)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.sheetCancelText, { color: colors.textPrimary }]}>
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </SafeAreaView>
-  );
+        </Modal>
+
+        {/* Unified Reusable Avatar Picker Modal */}
+        <AvatarPickerModal
+          visible={isAvatarPickerVisible}
+          onClose={() => setIsAvatarPickerVisible(false)}
+        />
+      </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -1079,22 +976,6 @@ const styles = StyleSheet.create({
   sheetMenuContent: {
     paddingBottom: 4,
   },
-  avatarHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  avatarBackBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-  },
-  avatarBackText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   sheetTitle: {
     fontSize: 17,
     fontWeight: '700',
@@ -1153,30 +1034,5 @@ const styles = StyleSheet.create({
   sheetCancelText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  cuteAvatarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: SPACING.lg,
-  },
-  cuteAvatarCard: {
-    width: '23%',
-    aspectRatio: 1,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 4,
-  },
-  cuteAvatarEmoji: {
-    fontSize: 28,
-    marginBottom: 4,
-    includeFontPadding: false,
-  },
-  cuteAvatarLabel: {
-    fontSize: 9,
-    textAlign: 'center',
   },
 });
