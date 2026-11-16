@@ -42,6 +42,9 @@ export const TRANSLATIONS = {
     sunscreenRecommendation: 'Sunscreen is a must today!',
     sunscreenTip: 'UV levels are high. Apply broad-spectrum SPF 30+ or 50+ and reapply every 2 hours to prevent photo-damage.',
     close: 'Close',
+    customizeAvatar: 'Customize Avatar',
+    chooseEmoji: 'CHOOSE AN ICON',
+    chooseBgColor: 'BACKGROUND COLOR',
 
     // Routine Screen
     routineTitle: 'Skincare Routine',
@@ -310,6 +313,9 @@ export const TRANSLATIONS = {
     sunscreenRecommendation: 'Bugün güneş kremi şart!',
     sunscreenTip: 'UV seviyeleri yüksek. Foto-hasarı önlemek için geniş spektrumlu SPF 30+ veya 50+ uygulayın ve 2 saatte bir tazeleyin.',
     close: 'Kapat',
+    customizeAvatar: 'Avatarı Özelleştir',
+    chooseEmoji: 'SİMGE SEÇİN',
+    chooseBgColor: 'ARKA PLAN RENGİ',
 
     // Routine Screen
     routineTitle: 'Cilt Bakım Rutini',
