@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActionSheetIOS,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -151,12 +152,24 @@ export default function CabinetScreen() {
   const [isAiScanning, setIsAiScanning] = useState<boolean>(false);
   const [scannedImageUri, setScannedImageUri] = useState<string | null>(null);
 
+  // Action Menu Bottom Sheet State (Android / Fallback)
+  const [isActionMenuVisible, setIsActionMenuVisible] = useState<boolean>(false);
+
+  // Manual Entry Modal State
+  const [isManualModalVisible, setIsManualModalVisible] = useState<boolean>(false);
+  const [manualName, setManualName] = useState<string>('');
+  const [manualBrand, setManualBrand] = useState<string>('');
+  const [manualCategory, setManualCategory] = useState<ProductCategory>('cleanser');
+  const [manualImageUri, setManualImageUri] = useState<string | null>(null);
+  const [isSubmittingManual, setIsSubmittingManual] = useState<boolean>(false);
+
   // Edit Product Modal State
   const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editName, setEditName] = useState<string>('');
   const [editBrand, setEditBrand] = useState<string>('');
   const [editCategory, setEditCategory] = useState<ProductCategory>('cleanser');
+  const [editImageUri, setEditImageUri] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
 
   /**
@@ -190,6 +203,96 @@ export default function CabinetScreen() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  /**
+   * Open Action Menu (Native ActionSheet on iOS, stylish custom bottom sheet fallback on Android)
+   */
+  const handleOpenAddMenu = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [
+            t('scanWithAi'),
+            t('addManually'),
+            t('cancel'),
+          ],
+          cancelButtonIndex: 2,
+        },
+        buttonIndex => {
+          if (buttonIndex === 0) {
+            handleScanProduct();
+          } else if (buttonIndex === 1) {
+            handleOpenManualModal();
+          }
+        }
+      );
+    } else {
+      setIsActionMenuVisible(true);
+    }
+  };
+
+  /**
+   * Open Manual Add Modal
+   */
+  const handleOpenManualModal = () => {
+    setIsActionMenuVisible(false);
+    setManualName('');
+    setManualBrand('');
+    setManualCategory('cleanser');
+    setManualImageUri(null);
+    setIsManualModalVisible(true);
+  };
+
+  /**
+   * Optional image picker for Manual Add
+   */
+  const handlePickManualImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setManualImageUri(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn('Manual image pick error:', e);
+    }
+  };
+
+  /**
+   * Save Product from Manual Add Modal
+   */
+  const handleSaveManualProduct = async () => {
+    if (!manualName.trim()) {
+      Alert.alert(t('requiredField'), t('enterProductName'));
+      return;
+    }
+
+    try {
+      setIsSubmittingManual(true);
+      const meta = getCategoryMeta(manualCategory);
+
+      await addProduct({
+        name: manualName.trim(),
+        brand: manualBrand.trim() || undefined,
+        category: meta.key,
+        openedDate: getTodayFormatted(),
+        orderWeight: meta.orderWeight,
+        imageUri: manualImageUri || undefined,
+      });
+
+      setIsManualModalVisible(false);
+      await loadProducts();
+    } catch (error) {
+      console.error('Error saving manual product:', error);
+      Alert.alert(t('saveFailed'), t('couldNotSaveProduct'));
+    } finally {
+      setIsSubmittingManual(false);
+    }
+  };
 
   /**
    * Simulated AI Vision Analysis & Auto-Categorization
@@ -285,7 +388,27 @@ export default function CabinetScreen() {
     setEditName(product.name);
     setEditBrand(product.brand || '');
     setEditCategory(getCategoryMeta(product.category).key);
+    setEditImageUri(product.imageUri || null);
     setIsEditModalVisible(true);
+  };
+
+  /**
+   * Optional image picker to replace photo in Edit Modal
+   */
+  const handlePickEditImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setEditImageUri(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.warn('Edit image pick error:', e);
+    }
   };
 
   /**
@@ -307,6 +430,7 @@ export default function CabinetScreen() {
         brand: editBrand.trim() || undefined,
         category: meta.key,
         orderWeight: meta.orderWeight,
+        imageUri: editImageUri || undefined,
       });
 
       setIsEditModalVisible(false);
@@ -378,15 +502,12 @@ export default function CabinetScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary }]}
-              onPress={handleScanProduct}
-              activeOpacity={0.85}
-              accessibilityLabel="Scan skincare product with camera"
+              style={[styles.circularAddButton, { backgroundColor: colors.primary }]}
+              onPress={handleOpenAddMenu}
+              activeOpacity={0.8}
+              accessibilityLabel="Add skincare product"
             >
-              <View style={styles.addButtonContent}>
-                <Ionicons name="camera" size={15} color="#FFFFFF" />
-                <Text style={styles.addButtonText}>{t('scanProduct')}</Text>
-              </View>
+              <Ionicons name="add" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -474,13 +595,13 @@ export default function CabinetScreen() {
             </Text>
             <TouchableOpacity
               style={[styles.emptyButton, { backgroundColor: colors.primary }]}
-              onPress={handleScanProduct}
+              onPress={handleOpenAddMenu}
               activeOpacity={0.85}
-              accessibilityLabel="Scan first skincare product with camera"
+              accessibilityLabel="Add first skincare product"
             >
               <View style={styles.emptyButtonContent}>
-                <Ionicons name="camera" size={17} color="#FFFFFF" />
-                <Text style={styles.emptyButtonText}>{t('scanFirstProduct')}</Text>
+                <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.emptyButtonText}>{t('addFirstProduct')}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -738,6 +859,348 @@ export default function CabinetScreen() {
       </Modal>
 
       {/* ======================================================== */}
+      {/* Action Menu (Custom Bottom Sheet for Android / Fallback) */}
+      {/* ======================================================== */}
+      <Modal
+        visible={isActionMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsActionMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.actionSheetOverlay}
+          activeOpacity={1}
+          onPress={() => setIsActionMenuVisible(false)}
+        >
+          <View
+            style={[
+              styles.actionSheetCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+
+            <TouchableOpacity
+              style={[
+                styles.sheetActionOption,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={() => {
+                setIsActionMenuVisible(false);
+                handleScanProduct();
+              }}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.sheetActionIconCircle,
+                  { backgroundColor: isDark ? '#23332A' : '#E8F1EB' },
+                ]}
+              >
+                <Ionicons name="camera" size={18} color={colors.secondary} />
+              </View>
+              <View style={styles.sheetActionTextCol}>
+                <Text style={[styles.sheetActionTitle, { color: colors.textPrimary }]}>
+                  {t('scanWithAi')}
+                </Text>
+                <Text style={[styles.sheetActionSub, { color: colors.textSecondary }]}>
+                  {t('aiAnalyzingSub')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetActionOption}
+              onPress={handleOpenManualModal}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.sheetActionIconCircle,
+                  { backgroundColor: isDark ? '#3D2721' : colors.primaryLight },
+                ]}
+              >
+                <Ionicons name="create-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.sheetActionTextCol}>
+                <Text style={[styles.sheetActionTitle, { color: colors.textPrimary }]}>
+                  {t('addManually')}
+                </Text>
+                <Text style={[styles.sheetActionSub, { color: colors.textSecondary }]}>
+                  {t('productNamePlaceholder')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sheetCancelBtn,
+                {
+                  backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => setIsActionMenuVisible(false)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.sheetCancelText, { color: colors.textSecondary }]}>
+                {t('cancel')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* Manual Product Addition Modal                            */}
+      {/* ======================================================== */}
+      <Modal
+        visible={isManualModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsManualModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalEyebrow, { color: colors.primary }]}>
+                  {t('newAddition')}
+                </Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+                  {t('addManually')}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsManualModalVisible(false)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={[styles.modalCloseText, { color: colors.textSecondary }]}>
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Optional Photo Section with Elegant Placeholder */}
+              <View style={styles.imageSelectorGroup}>
+                <View
+                  style={[
+                    styles.imagePreviewCircle,
+                    {
+                      backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  {manualImageUri ? (
+                    <Image source={{ uri: manualImageUri }} style={styles.imagePreviewPhoto} />
+                  ) : (
+                    <Text style={styles.imagePreviewPlaceholderEmoji}>
+                      {getCategoryMeta(manualCategory).icon}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.imageButtonsCol}>
+                  <TouchableOpacity
+                    style={[
+                      styles.changePhotoButton,
+                      { backgroundColor: isDark ? '#332E2A' : '#EFEAE3' },
+                    ]}
+                    onPress={handlePickManualImage}
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="camera-outline" size={14} color={colors.textPrimary} />
+                    <Text style={[styles.changePhotoText, { color: colors.textPrimary }]}>
+                      {manualImageUri ? t('changePhoto') : t('addPhotoOptional')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {manualImageUri ? (
+                    <TouchableOpacity
+                      onPress={() => setManualImageUri(null)}
+                      style={styles.removePhotoButton}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.removePhotoText, { color: colors.primary }]}>
+                        {t('removePhotoOption')}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+
+              {/* Product Name Input */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                  {t('productName')} <Text style={{ color: colors.primary }}>*</Text>
+                </Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: isDark ? '#262421' : '#F9F7F3',
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                    },
+                  ]}
+                  placeholder={t('productNamePlaceholder')}
+                  placeholderTextColor={colors.textMuted}
+                  value={manualName}
+                  onChangeText={setManualName}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Brand Input (Optional) */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                  {t('brandOptional')}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    {
+                      backgroundColor: isDark ? '#262421' : '#F9F7F3',
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                    },
+                  ]}
+                  placeholder={t('brandPlaceholder')}
+                  placeholderTextColor={colors.textMuted}
+                  value={manualBrand}
+                  onChangeText={setManualBrand}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Category Selector */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                  {t('category')} <Text style={{ color: colors.primary }}>*</Text>
+                </Text>
+                <Text style={[styles.inputHelp, { color: colors.textSecondary }]}>
+                  {t('catHelpText')}
+                </Text>
+
+                <View style={styles.categoryGrid}>
+                  {PRIMARY_CATEGORIES.map(cat => {
+                    const isSelected = manualCategory === cat.key;
+                    return (
+                      <TouchableOpacity
+                        key={cat.key}
+                        style={[
+                          styles.categoryOption,
+                          {
+                            backgroundColor: isSelected
+                              ? isDark ? '#3D251E' : colors.primaryLight
+                              : isDark ? '#262421' : '#F8F6F2',
+                            borderColor: isSelected
+                              ? colors.primary
+                              : colors.border,
+                          },
+                        ]}
+                        onPress={() => setManualCategory(cat.key)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.catOptionHeader}>
+                          <Text style={styles.catOptionIcon}>{cat.icon}</Text>
+                          <View
+                            style={[
+                              styles.stepBadge,
+                              {
+                                backgroundColor: isSelected
+                                  ? colors.primary
+                                  : isDark ? '#36322E' : '#E6E1D8',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.stepBadgeText,
+                                {
+                                  color: isSelected
+                                    ? '#FFFFFF'
+                                    : colors.textSecondary,
+                                },
+                              ]}
+                            >
+                              #{cat.orderWeight}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text
+                          style={[
+                            styles.catOptionLabel,
+                            {
+                              color: isSelected
+                                ? colors.primary
+                                : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '600',
+                            },
+                          ]}
+                        >
+                          {getCategoryLabel(cat.key, t)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.modalActionRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.modalCancelButton,
+                    { borderColor: colors.border },
+                  ]}
+                  onPress={() => setIsManualModalVisible(false)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>
+                    {t('cancel')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalSaveButton,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={handleSaveManualProduct}
+                  disabled={isSubmittingManual}
+                  activeOpacity={0.85}
+                >
+                  {isSubmittingManual ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveText}>{t('saveProduct')}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ======================================================== */}
       {/* Subtle Edit Product Modal                                 */}
       {/* ======================================================== */}
       <Modal
@@ -780,6 +1243,55 @@ export default function CabinetScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Product Photo Replacement Section */}
+              <View style={styles.imageSelectorGroup}>
+                <View
+                  style={[
+                    styles.imagePreviewCircle,
+                    {
+                      backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  {editImageUri ? (
+                    <Image source={{ uri: editImageUri }} style={styles.imagePreviewPhoto} />
+                  ) : (
+                    <Text style={styles.imagePreviewPlaceholderEmoji}>
+                      {getCategoryMeta(editCategory).icon}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.imageButtonsCol}>
+                  <TouchableOpacity
+                    style={[
+                      styles.changePhotoButton,
+                      { backgroundColor: isDark ? '#332E2A' : '#EFEAE3' },
+                    ]}
+                    onPress={handlePickEditImage}
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="camera-outline" size={14} color={colors.textPrimary} />
+                    <Text style={[styles.changePhotoText, { color: colors.textPrimary }]}>
+                      {editImageUri ? t('changePhoto') : t('addPhotoOptional')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {editImageUri ? (
+                    <TouchableOpacity
+                      onPress={() => setEditImageUri(null)}
+                      style={styles.removePhotoButton}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.removePhotoText, { color: colors.primary }]}>
+                        {t('removePhotoOption')}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              </View>
+
               {/* Product Name Input */}
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
@@ -969,6 +1481,18 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     marginTop: 4,
+  },
+  circularAddButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#C86D56',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   addButton: {
     paddingHorizontal: 16,
@@ -1427,5 +1951,112 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  /* Image Selector / Replacement in Modals */
+  imageSelectorGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: SPACING.md,
+    paddingVertical: 4,
+  },
+  imagePreviewCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  imagePreviewPhoto: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imagePreviewPlaceholderEmoji: {
+    fontSize: 24,
+  },
+  imageButtonsCol: {
+    flex: 1,
+    gap: 6,
+  },
+  changePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADIUS.full,
+    alignSelf: 'flex-start',
+  },
+  changePhotoText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  removePhotoButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 4,
+  },
+  removePhotoText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  /* Action Sheet Modal (Fallback / Android) */
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : SPACING.lg,
+    borderWidth: 1,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: SPACING.md,
+  },
+  sheetActionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+  },
+  sheetActionIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetActionTextCol: {
+    flex: 1,
+  },
+  sheetActionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  sheetActionSub: {
+    fontSize: 12,
+  },
+  sheetCancelBtn: {
+    marginTop: SPACING.md,
+    height: 46,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
