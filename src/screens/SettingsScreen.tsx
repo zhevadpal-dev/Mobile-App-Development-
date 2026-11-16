@@ -206,7 +206,12 @@ export default function SettingsScreen() {
           >
             {/* Avatar Row */}
             <View style={styles.avatarSection}>
-              <View style={styles.avatarWrapper}>
+              <TouchableOpacity
+                style={styles.avatarWrapper}
+                onPress={() => setIsAvatarPickerVisible(true)}
+                activeOpacity={0.8}
+                accessibilityLabel="Edit profile avatar"
+              >
                 {isAvatarEmoji ? (
                   <View
                     style={[
@@ -230,15 +235,12 @@ export default function SettingsScreen() {
                 )}
 
                 {/* Avatar customizer trigger */}
-                <TouchableOpacity
+                <View
                   style={[styles.cameraBadge, { backgroundColor: colors.primary }]}
-                  onPress={() => setIsAvatarPickerVisible(true)}
-                  activeOpacity={0.8}
-                  accessibilityLabel="Edit profile avatar"
                 >
                   <Text style={styles.cameraBadgeIcon}>✨</Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              </TouchableOpacity>
 
               <View style={styles.avatarActionContainer}>
                 <TouchableOpacity
@@ -249,8 +251,9 @@ export default function SettingsScreen() {
                       backgroundColor: isDark ? '#38251E' : '#FBF0EC',
                     },
                   ]}
-                  onPress={openSheet}
+                  onPress={() => setIsAvatarPickerVisible(true)}
                   activeOpacity={0.7}
+                  accessibilityLabel="Edit profile avatar"
                 >
                   <Text style={[styles.editPhotoText, { color: colors.primary }]}>
                     {photoUri ? t('editPhoto') : t('uploadPhoto')}
