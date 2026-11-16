@@ -13,6 +13,7 @@ import {
   Modal,
   Platform,
   ActivityIndicator,
+  ActionSheetIOS,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -66,7 +67,46 @@ export default function SettingsScreen() {
   };
 
   const openSheet = () => {
-    setIsSheetVisible(true);
+    handleOpenActionMenu();
+  };
+
+  /**
+   * Action Menu: Native ActionSheet on iOS or Bottom Sheet Menu on Android/Fallback
+   * Options in exact requested order:
+   * 1. 'Take a Photo' (opens camera)
+   * 2. 'Choose from Gallery' (opens camera roll)
+   * 3. 'Choose Cute Avatar' (opens custom AvatarPickerModal)
+   * 4. 'Cancel'
+   */
+  const handleOpenActionMenu = () => {
+    if (Platform.OS === 'ios') {
+      const options = photoUri
+        ? [t('takePhoto'), t('chooseGallery'), t('chooseAvatar'), t('removePhoto'), t('cancel')]
+        : [t('takePhoto'), t('chooseGallery'), t('chooseAvatar'), t('cancel')];
+      const cancelIndex = options.length - 1;
+      const destructiveIndex = photoUri ? 3 : undefined;
+
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: cancelIndex,
+          destructiveButtonIndex: destructiveIndex,
+        },
+        buttonIndex => {
+          if (buttonIndex === 0) {
+            handleTakePhoto();
+          } else if (buttonIndex === 1) {
+            handleChooseFromGallery();
+          } else if (buttonIndex === 2) {
+            setIsAvatarPickerVisible(true);
+          } else if (photoUri && buttonIndex === 3) {
+            handleRemovePhoto();
+          }
+        }
+      );
+    } else {
+      setIsSheetVisible(true);
+    }
   };
 
   /**
@@ -166,7 +206,8 @@ export default function SettingsScreen() {
 
   const userInitial = (name || user?.name || 'Z').trim().charAt(0).toUpperCase();
   const isAvatarEmoji = photoUri?.startsWith('avatar:');
-  const avatarEmojiChar = isAvatarEmoji ? photoUri?.replace('avatar:', '') : '🧸';
+  const isActualPhoto = Boolean(photoUri && !isAvatarEmoji);
+  const avatarEmojiChar = isAvatarEmoji && photoUri ? photoUri.replace('avatar:', '') : '🧸';
   const avatarBgColor = user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8');
 
   return (
@@ -208,20 +249,11 @@ export default function SettingsScreen() {
             <View style={styles.avatarSection}>
               <TouchableOpacity
                 style={styles.avatarWrapper}
-                onPress={() => setIsAvatarPickerVisible(true)}
+                onPress={handleOpenActionMenu}
                 activeOpacity={0.8}
-                accessibilityLabel="Edit profile avatar"
+                accessibilityLabel="Edit profile photo"
               >
-                {isAvatarEmoji ? (
-                  <View
-                    style={[
-                      styles.largeAvatarPlaceholder,
-                      { backgroundColor: avatarBgColor },
-                    ]}
-                  >
-                    <Text style={styles.largeAvatarEmoji}>{avatarEmojiChar}</Text>
-                  </View>
-                ) : photoUri ? (
+                {isActualPhoto && photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.largeAvatarImage} />
                 ) : (
                   <View
@@ -230,16 +262,9 @@ export default function SettingsScreen() {
                       { backgroundColor: avatarBgColor },
                     ]}
                   >
-                    <Text style={styles.largeAvatarEmoji}>🧸</Text>
+                    <Text style={styles.largeAvatarEmoji}>{avatarEmojiChar}</Text>
                   </View>
                 )}
-
-                {/* Avatar customizer trigger */}
-                <View
-                  style={[styles.cameraBadge, { backgroundColor: colors.primary }]}
-                >
-                  <Text style={styles.cameraBadgeIcon}>✨</Text>
-                </View>
               </TouchableOpacity>
 
               <View style={styles.avatarActionContainer}>
@@ -251,9 +276,9 @@ export default function SettingsScreen() {
                       backgroundColor: isDark ? '#38251E' : '#FBF0EC',
                     },
                   ]}
-                  onPress={() => setIsAvatarPickerVisible(true)}
+                  onPress={handleOpenActionMenu}
                   activeOpacity={0.7}
-                  accessibilityLabel="Edit profile avatar"
+                  accessibilityLabel="Edit profile photo"
                 >
                   <Text style={[styles.editPhotoText, { color: colors.primary }]}>
                     {photoUri ? t('editPhoto') : t('uploadPhoto')}
@@ -545,7 +570,7 @@ export default function SettingsScreen() {
                 </Text>
 
                 <View style={styles.sheetOptionsGroup}>
-                  {/* Option 1: Choose Avatar */}
+                  {/* Option 1: Take a Photo */}
                   <TouchableOpacity
                     style={[
                       styles.sheetOptionButton,
@@ -554,26 +579,23 @@ export default function SettingsScreen() {
                         borderColor: colors.cardBorder,
                       },
                     ]}
-                    onPress={() => {
-                      setIsSheetVisible(false);
-                      setIsAvatarPickerVisible(true);
-                    }}
+                    onPress={handleTakePhoto}
                     activeOpacity={0.75}
                   >
                     <View
                       style={[
                         styles.sheetOptionIconCircle,
-                        { backgroundColor: isDark ? '#3A2E26' : '#F5EBE6' },
+                        { backgroundColor: isDark ? '#3A2E26' : '#FAF0EC' },
                       ]}
                     >
-                      <Text style={styles.sheetOptionEmoji}>🌿</Text>
+                      <Text style={styles.sheetOptionEmoji}>📸</Text>
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
-                        {t('chooseAvatar')}
+                        {t('takePhoto')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        {t('chooseAvatarSub')}
+                        {t('takePhotoSub')}
                       </Text>
                     </View>
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
@@ -610,7 +632,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
                   </TouchableOpacity>
 
-                  {/* Option 3: Take a Photo */}
+                  {/* Option 3: Choose Cute Avatar */}
                   <TouchableOpacity
                     style={[
                       styles.sheetOptionButton,
@@ -619,23 +641,26 @@ export default function SettingsScreen() {
                         borderColor: colors.cardBorder,
                       },
                     ]}
-                    onPress={handleTakePhoto}
+                    onPress={() => {
+                      setIsSheetVisible(false);
+                      setIsAvatarPickerVisible(true);
+                    }}
                     activeOpacity={0.75}
                   >
                     <View
                       style={[
                         styles.sheetOptionIconCircle,
-                        { backgroundColor: isDark ? '#3A2E26' : '#FAF0EC' },
+                        { backgroundColor: isDark ? '#3A2E26' : '#F5EBE6' },
                       ]}
                     >
-                      <Text style={styles.sheetOptionEmoji}>📸</Text>
+                      <Text style={styles.sheetOptionEmoji}>✨</Text>
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
-                        {t('takePhoto')}
+                        {t('chooseAvatar')}
                       </Text>
                       <Text style={[styles.sheetOptionDesc, { color: colors.textSecondary }]}>
-                        {t('takePhotoSub')}
+                        {t('chooseAvatarSub')}
                       </Text>
                     </View>
                     <Text style={[styles.sheetChevron, { color: colors.textMuted }]}>›</Text>
@@ -775,21 +800,6 @@ const styles = StyleSheet.create({
     fontSize: 38,
     textAlign: 'center',
     includeFontPadding: false,
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  cameraBadgeIcon: {
-    fontSize: 12,
   },
   avatarActionContainer: {
     flex: 1,
