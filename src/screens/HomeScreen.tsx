@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SPACING, RADIUS } from '../constants/theme';
 import { RootTabParamList, MainStackParamList } from '../types/navigation';
+import PixelAvatar, { DEFAULT_PIXEL_AVATAR } from '../components/PixelAvatar';
 
 /**
  * Determine dynamic greeting based on device's current local hour:
@@ -50,13 +51,9 @@ export default function HomeScreen() {
   });
 
   const photoUri = user?.photoUri;
-  const isAvatarEmoji = photoUri?.startsWith('avatar:');
-  const avatarEmoji = isAvatarEmoji && photoUri
-    ? photoUri.replace('avatar:', '')
-    : photoUri
-    ? null
-    : '🧸';
-  const avatarBgColor = user?.avatarBgColor || (isDark ? '#2D221D' : '#FBECE8');
+  const isActualPhoto = Boolean(photoUri && !photoUri.startsWith('avatar:'));
+  const pixelAvatar = user?.pixelAvatar || DEFAULT_PIXEL_AVATAR;
+  const avatarBgColor = pixelAvatar.bgColor || user?.avatarBgColor || (isDark ? '#2D221D' : '#FBECE8');
 
   // Keep dynamic greeting updated as time advances
   useEffect(() => {
@@ -115,14 +112,10 @@ export default function HomeScreen() {
           activeOpacity={0.75}
           accessibilityLabel="Open settings and profile"
         >
-          {avatarEmoji ? (
-            <Text style={styles.avatarEmojiText}>{avatarEmoji}</Text>
-          ) : photoUri ? (
+          {isActualPhoto && photoUri ? (
             <Image source={{ uri: photoUri }} style={styles.avatarImage} />
           ) : (
-            <Text style={[styles.avatarInitialText, { color: colors.primary }]}>
-              {userInitial}
-            </Text>
+            <PixelAvatar config={pixelAvatar} size={44} />
           )}
         </TouchableOpacity>
       </View>

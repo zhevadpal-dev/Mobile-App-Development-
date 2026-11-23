@@ -1,3 +1,12 @@
+export interface PixelAvatarConfig {
+  skinTone: string;
+  hairStyle: 'bun' | 'long' | 'bob' | 'ponytail';
+  hairColor: string;
+  glasses: 'none' | 'round' | 'square' | 'sunglasses';
+  outfitColor: string;
+  bgColor: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -5,6 +14,7 @@ export interface User {
   createdAt: number;
   photoUri?: string;
   avatarBgColor?: string;
+  pixelAvatar?: PixelAvatarConfig;
 }
 
 export interface StoredUserAccount extends User {

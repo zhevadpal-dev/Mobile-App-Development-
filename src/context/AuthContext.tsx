@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, LoginCredentials, SignUpCredentials } from '../types/auth';
+import { User, LoginCredentials, SignUpCredentials, PixelAvatarConfig } from '../types/auth';
 import {
   getStoredSession,
   loginUser,
@@ -20,6 +20,7 @@ interface AuthContextType {
     name?: string;
     photoUri?: string | null;
     avatarBgColor?: string | null;
+    pixelAvatar?: PixelAvatarConfig | null;
   }) => Promise<void>;
 }
 
@@ -72,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name?: string;
       photoUri?: string | null;
       avatarBgColor?: string | null;
+      pixelAvatar?: PixelAvatarConfig | null;
     }) => {
       const updatedUser = await updateStoredUserProfile(updates);
       setUser(updatedUser);
