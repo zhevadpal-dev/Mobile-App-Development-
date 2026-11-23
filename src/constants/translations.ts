@@ -115,7 +115,7 @@ export const TRANSLATIONS = {
     catOther: 'Other',
 
     // Diary Screen
-    diarySubtitle: 'Track your skin history, discover tailored tips, and build consistent habits.',
+    diarySubtitle: 'Skincare routine',
     jumpToToday: 'Jump to Today',
     howDoesSkinFeel: 'How does your skin feel today?',
     howDoesSkinFeelOn: 'How does your skin feel on',
@@ -401,7 +401,7 @@ export const TRANSLATIONS = {
     catOther: 'Diğer',
 
     // Diary Screen
-    diarySubtitle: 'Cilt geçmişinizi takip edin, özel ipuçları keşfedin ve alışkanlıklar edinin.',
+    diarySubtitle: 'Cilt bakım rutini',
     jumpToToday: 'Bugüne Git',
     howDoesSkinFeel: 'Bugün cildiniz nasıl hissediyor?',
     howDoesSkinFeelOn: 'Tarihindeki cilt hissiniz:',

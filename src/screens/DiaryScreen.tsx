@@ -578,26 +578,10 @@ export default function DiaryScreen() {
                 </Text>
               ) : null}
             </View>
-          ) : (
-            <View
-              style={[
-                styles.emptyDayNotice,
-                {
-                  backgroundColor: isDark ? '#1C1B19' : colors.card,
-                  borderColor: colors.cardBorder,
-                },
-              ]}
-            >
-              <Text style={[styles.emptyDayNoticeText, { color: colors.textSecondary }]}>
-                {selectedDate === todayString
-                  ? t('startTrackingPrompt')
-                  : `${t('noEntryForDate')} ${formatLogDisplayDate(selectedDate, t)}.`}
-              </Text>
-            </View>
-          )}
+          ) : null}
 
           {/* Daily Skin Check-In Section */}
-          <Text style={[styles.sectionHeading, { color: colors.textPrimary, marginTop: SPACING.md }]}>
+          <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
             {selectedDate === todayString
               ? t('howDoesSkinFeel')
               : `${t('howDoesSkinFeelOn')} ${formatLogDisplayDate(selectedDate, t)}`}
@@ -972,18 +956,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     lineHeight: 16,
-  },
-  emptyDayNotice: {
-    borderRadius: RADIUS.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    marginBottom: SPACING.md,
-  },
-  emptyDayNoticeText: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontStyle: 'italic',
   },
   sectionHeading: {
     fontSize: 15,
