@@ -59,7 +59,7 @@ export const PRIMARY_CATEGORIES: CategoryDefinition[] = [
 /**
  * Routine allocation options
  */
-export type RoutineType = 'am' | 'pm' | 'both';
+export type RoutineType = 'am' | 'pm' | 'both' | 'none';
 
 /**
  * Core Skincare Product Interface

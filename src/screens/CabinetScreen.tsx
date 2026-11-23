@@ -26,6 +26,7 @@ import {
   ProductCategory,
   PRIMARY_CATEGORIES,
   CATEGORY_ORDER_WEIGHTS,
+  RoutineType,
 } from '../types/product';
 import {
   getProducts,
@@ -116,7 +117,7 @@ const getTodayFormatted = (): string => {
 /**
  * Resolve display information for category
  */
-const getCategoryMeta = (category: string) => {
+export const getCategoryMeta = (category: string) => {
   const found = PRIMARY_CATEGORIES.find(
     c => c.key === category.toLowerCase() || c.label.toLowerCase() === category.toLowerCase()
   );
@@ -160,6 +161,7 @@ export default function CabinetScreen() {
   const [manualName, setManualName] = useState<string>('');
   const [manualBrand, setManualBrand] = useState<string>('');
   const [manualCategory, setManualCategory] = useState<ProductCategory>('cleanser');
+  const [manualRoutine, setManualRoutine] = useState<RoutineType>('both');
   const [manualImageUri, setManualImageUri] = useState<string | null>(null);
   const [isSubmittingManual, setIsSubmittingManual] = useState<boolean>(false);
 
@@ -169,6 +171,7 @@ export default function CabinetScreen() {
   const [editName, setEditName] = useState<string>('');
   const [editBrand, setEditBrand] = useState<string>('');
   const [editCategory, setEditCategory] = useState<ProductCategory>('cleanser');
+  const [editRoutine, setEditRoutine] = useState<RoutineType>('both');
   const [editImageUri, setEditImageUri] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
 
@@ -279,12 +282,17 @@ export default function CabinetScreen() {
         name: manualName.trim(),
         brand: manualBrand.trim() || undefined,
         category: meta.key,
+        routineType: manualRoutine,
         openedDate: getTodayFormatted(),
         orderWeight: meta.orderWeight,
         imageUri: manualImageUri || undefined,
       });
 
       setIsManualModalVisible(false);
+      setManualName('');
+      setManualBrand('');
+      setManualRoutine('both');
+      setManualImageUri(null);
       await loadProducts();
     } catch (error) {
       console.error('Error saving manual product:', error);
@@ -307,11 +315,18 @@ export default function CabinetScreen() {
         const randomIndex = Math.floor(Math.random() * AI_SCANNED_PRODUCTS.length);
         const mockProduct = AI_SCANNED_PRODUCTS[randomIndex];
         const meta = getCategoryMeta(mockProduct.category);
+        const autoRoutine: RoutineType =
+          mockProduct.category === 'sunscreen'
+            ? 'am'
+            : mockProduct.category === 'masks_treatments'
+            ? 'pm'
+            : 'both';
 
         await addProduct({
           name: mockProduct.name,
           brand: mockProduct.brand,
           category: meta.key,
+          routineType: autoRoutine,
           openedDate: getTodayFormatted(),
           orderWeight: meta.orderWeight,
           imageUri,
@@ -388,6 +403,7 @@ export default function CabinetScreen() {
     setEditName(product.name);
     setEditBrand(product.brand || '');
     setEditCategory(getCategoryMeta(product.category).key);
+    setEditRoutine(product.routineType || 'both');
     setEditImageUri(product.imageUri || null);
     setIsEditModalVisible(true);
   };
@@ -429,6 +445,7 @@ export default function CabinetScreen() {
         name: editName.trim(),
         brand: editBrand.trim() || undefined,
         category: meta.key,
+        routineType: editRoutine,
         orderWeight: meta.orderWeight,
         imageUri: editImageUri || undefined,
       });
@@ -716,6 +733,32 @@ export default function CabinetScreen() {
                             {getCategoryLabel(meta.key, t).toUpperCase()}
                           </Text>
                         </View>
+
+                        {product.routineType && product.routineType !== 'none' ? (
+                          <View
+                            style={[
+                              styles.categoryTag,
+                              {
+                                backgroundColor: isDark ? '#263328' : '#EEF5F0',
+                                borderColor: isDark ? '#324735' : '#D9E8DC',
+                                borderWidth: 1,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryTagText,
+                                { color: colors.secondary },
+                              ]}
+                            >
+                              {product.routineType === 'am'
+                                ? t('routineAmShort')
+                                : product.routineType === 'pm'
+                                ? t('routinePmShort')
+                                : t('routineBothShort')}
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
 
                       <Text
@@ -1164,6 +1207,45 @@ export default function CabinetScreen() {
                 </View>
               </View>
 
+              {/* Routine Assignment Selector */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                  {t('routineAssignment')}
+                </Text>
+                <View style={styles.routineSelectorRow}>
+                  {(['am', 'pm', 'both'] as RoutineType[]).map(r => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[
+                        styles.routineOptionBtn,
+                        manualRoutine === r && [
+                          styles.routineOptionBtnActive,
+                          { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ],
+                        manualRoutine !== r && {
+                          backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => setManualRoutine(r)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.routineOptionText,
+                          {
+                            color: manualRoutine === r ? '#FFFFFF' : colors.textPrimary,
+                            fontWeight: manualRoutine === r ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {r === 'am' ? t('routineAm') : r === 'pm' ? t('routinePm') : t('routineBoth')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
               {/* Action Buttons */}
               <View style={styles.modalActionRow}>
                 <TouchableOpacity
@@ -1407,6 +1489,45 @@ export default function CabinetScreen() {
                       </TouchableOpacity>
                     );
                   })}
+                </View>
+              </View>
+
+              {/* Routine Assignment Selector */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>
+                  {t('routineAssignment')}
+                </Text>
+                <View style={styles.routineSelectorRow}>
+                  {(['am', 'pm', 'both'] as RoutineType[]).map(r => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[
+                        styles.routineOptionBtn,
+                        editRoutine === r && [
+                          styles.routineOptionBtnActive,
+                          { backgroundColor: colors.primary, borderColor: colors.primary },
+                        ],
+                        editRoutine !== r && {
+                          backgroundColor: isDark ? '#262421' : '#F6F3EE',
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => setEditRoutine(r)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.routineOptionText,
+                          {
+                            color: editRoutine === r ? '#FFFFFF' : colors.textPrimary,
+                            fontWeight: editRoutine === r ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {r === 'am' ? t('routineAm') : r === 'pm' ? t('routinePm') : t('routineBoth')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
 
@@ -1951,6 +2072,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  routineSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  routineOptionBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  routineOptionBtnActive: {},
+  routineOptionText: {
+    fontSize: 12,
   },
   /* Image Selector / Replacement in Modals */
   imageSelectorGroup: {
