@@ -5,7 +5,6 @@ import {
   AuthSession,
   LoginCredentials,
   SignUpCredentials,
-  PixelAvatarConfig,
 } from '../types/auth';
 
 const AUTH_TOKEN_KEY = '@skin_diary_auth_token';
@@ -14,22 +13,6 @@ const MOCK_ACCOUNTS_KEY = '@skin_diary_mock_accounts';
 
 export const AVATAR_EMOJI_STORAGE_KEY = '@skin_diary_avatar_emoji';
 export const AVATAR_BG_COLOR_STORAGE_KEY = '@skin_diary_avatar_bg_color';
-export const PIXEL_AVATAR_STORAGE_KEY = '@skin_diary_pixel_avatar_config';
-
-export const DEFAULT_PIXEL_AVATAR_CONFIG: PixelAvatarConfig = {
-  skinColor: 'ffd8b4',
-  skinTone: '#FFD8B4',
-  hair: 'long16',
-  hairStyle: 'long16',
-  hairColor: '28150a',
-  glasses: 'none',
-  accessories: 'none',
-  clothing: 'variant01',
-  clothingColor: '7d9d8b',
-  outfitColor: '#7D9D8B',
-  backgroundColor: 'dce8de',
-  bgColor: '#DCE8DE',
-};
 
 /**
  * Pre-seeded demo user account for fast testing
@@ -40,9 +23,8 @@ const DEFAULT_DEMO_ACCOUNT: StoredUserAccount = {
   email: 'zeynep@skindiary.com',
   password: 'password123',
   createdAt: 1714800000000,
-  photoUri: undefined,
-  avatarBgColor: '#DCE8DE',
-  pixelAvatar: DEFAULT_PIXEL_AVATAR_CONFIG,
+  photoUri: 'avatar:🧸',
+  avatarBgColor: '#FBECE8',
 };
 
 /**
@@ -91,16 +73,6 @@ export const getStoredSession = async (): Promise<AuthSession | null> => {
     }
 
     const user: User = JSON.parse(userRaw);
-    if (!user.pixelAvatar) {
-      const storedPixel = await AsyncStorage.getItem(PIXEL_AVATAR_STORAGE_KEY);
-      if (storedPixel) {
-        try {
-          user.pixelAvatar = JSON.parse(storedPixel);
-        } catch {
-          // ignore parsing error
-        }
-      }
-    }
     return { token, user };
   } catch (error) {
     console.error('Error reading stored session:', error);
@@ -140,9 +112,6 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthSess
     name: account.name,
     email: account.email,
     createdAt: account.createdAt,
-    photoUri: account.photoUri,
-    avatarBgColor: account.avatarBgColor,
-    pixelAvatar: account.pixelAvatar,
   };
 
   await Promise.all([
@@ -226,13 +195,12 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 /**
- * Update current user profile (name, photoUri, avatarBgColor, and/or pixelAvatar)
+ * Update current user profile (name, photoUri, and/or avatarBgColor)
  */
 export const updateStoredUserProfile = async (updates: {
   name?: string;
   photoUri?: string | null;
   avatarBgColor?: string | null;
-  pixelAvatar?: PixelAvatarConfig | null;
 }): Promise<User> => {
   const currentSession = await getStoredSession();
   if (!currentSession) {
@@ -247,18 +215,6 @@ export const updateStoredUserProfile = async (updates: {
       : {}),
     ...(updates.avatarBgColor !== undefined
       ? { avatarBgColor: updates.avatarBgColor || undefined }
-      : updates.pixelAvatar
-      ? {
-          avatarBgColor:
-            updates.pixelAvatar.backgroundColor
-              ? `#${updates.pixelAvatar.backgroundColor.replace(/^#/, '')}`
-              : updates.pixelAvatar.bgColor
-              ? `#${updates.pixelAvatar.bgColor.replace(/^#/, '')}`
-              : currentSession.user.avatarBgColor,
-        }
-      : {}),
-    ...(updates.pixelAvatar !== undefined
-      ? { pixelAvatar: updates.pixelAvatar || undefined }
       : {}),
   };
 
@@ -271,21 +227,9 @@ export const updateStoredUserProfile = async (updates: {
       AVATAR_EMOJI_STORAGE_KEY,
       updates.photoUri.replace('avatar:', '')
     );
-  } else if (updates.photoUri === null) {
-    await AsyncStorage.removeItem(AVATAR_EMOJI_STORAGE_KEY);
   }
-
   if (updates.avatarBgColor) {
     await AsyncStorage.setItem(AVATAR_BG_COLOR_STORAGE_KEY, updates.avatarBgColor);
-  }
-
-  if (updates.pixelAvatar) {
-    await AsyncStorage.setItem(
-      PIXEL_AVATAR_STORAGE_KEY,
-      JSON.stringify(updates.pixelAvatar)
-    );
-  } else if (updates.pixelAvatar === null) {
-    await AsyncStorage.removeItem(PIXEL_AVATAR_STORAGE_KEY);
   }
 
   // Also update in registered mock accounts
@@ -298,7 +242,6 @@ export const updateStoredUserProfile = async (updates: {
           name: updatedUser.name,
           photoUri: updatedUser.photoUri,
           avatarBgColor: updatedUser.avatarBgColor,
-          pixelAvatar: updatedUser.pixelAvatar,
         };
       }
       return acc;

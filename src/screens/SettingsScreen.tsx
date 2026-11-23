@@ -22,8 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
-import AvatarCreatorModal from '../components/AvatarCreatorModal';
-import PixelAvatar, { DEFAULT_PIXEL_AVATAR } from '../components/PixelAvatar';
+import AvatarPickerModal from '../components/AvatarPickerModal';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
@@ -205,10 +204,11 @@ export default function SettingsScreen() {
     );
   };
 
-  const isActualPhoto = Boolean(photoUri && !photoUri.startsWith('avatar:'));
-  const pixelAvatar = user?.pixelAvatar || DEFAULT_PIXEL_AVATAR;
-  const rawBg = pixelAvatar.backgroundColor || pixelAvatar.bgColor;
-  const avatarBgColor = (rawBg ? (rawBg.startsWith('#') ? rawBg : `#${rawBg}`) : user?.avatarBgColor) || (isDark ? '#3A231C' : '#FBECE8');
+  const userInitial = (name || user?.name || 'Z').trim().charAt(0).toUpperCase();
+  const isAvatarEmoji = photoUri?.startsWith('avatar:');
+  const isActualPhoto = Boolean(photoUri && !isAvatarEmoji);
+  const avatarEmojiChar = isAvatarEmoji && photoUri ? photoUri.replace('avatar:', '') : '🧸';
+  const avatarBgColor = user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -256,7 +256,14 @@ export default function SettingsScreen() {
                 {isActualPhoto && photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.largeAvatarImage} />
                 ) : (
-                  <PixelAvatar config={pixelAvatar} size={76} />
+                  <View
+                    style={[
+                      styles.largeAvatarPlaceholder,
+                      { backgroundColor: avatarBgColor },
+                    ]}
+                  >
+                    <Text style={styles.largeAvatarEmoji}>{avatarEmojiChar}</Text>
+                  </View>
                 )}
               </TouchableOpacity>
 
@@ -646,7 +653,7 @@ export default function SettingsScreen() {
                         { backgroundColor: isDark ? '#3A2E26' : '#F5EBE6' },
                       ]}
                     >
-                      <Text style={styles.sheetOptionEmoji}>👾</Text>
+                      <Text style={styles.sheetOptionEmoji}>✨</Text>
                     </View>
                     <View style={styles.sheetOptionTextContainer}>
                       <Text style={[styles.sheetOptionTitle, { color: colors.textPrimary }]}>
@@ -710,8 +717,8 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </Modal>
 
-        {/* 8-Bit Pixel Art Avatar Creator Modal */}
-        <AvatarCreatorModal
+        {/* Unified Reusable Avatar Picker Modal */}
+        <AvatarPickerModal
           visible={isAvatarPickerVisible}
           onClose={() => setIsAvatarPickerVisible(false)}
         />

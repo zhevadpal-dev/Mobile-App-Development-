@@ -1,18 +1,3 @@
-export interface PixelAvatarConfig {
-  skinColor?: string;
-  skinTone?: string;
-  hair?: string;
-  hairStyle?: string;
-  hairColor?: string;
-  glasses?: string;
-  accessories?: string;
-  clothing?: string;
-  clothingColor?: string;
-  outfitColor?: string;
-  backgroundColor?: string;
-  bgColor?: string;
-}
-
 export interface User {
   id: string;
   name: string;
@@ -20,7 +5,6 @@ export interface User {
   createdAt: number;
   photoUri?: string;
   avatarBgColor?: string;
-  pixelAvatar?: PixelAvatarConfig;
 }
 
 export interface StoredUserAccount extends User {

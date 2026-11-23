@@ -10,7 +10,6 @@ import { RootTabParamList, MainStackParamList } from '../types/navigation';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import PixelAvatar, { DEFAULT_PIXEL_AVATAR } from '../components/PixelAvatar';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -62,33 +61,30 @@ export default function TabNavigator() {
             Skin Diary
           </Text>
         ),
-        headerRight: () => {
-          const isActualPhoto = Boolean(user?.photoUri && !user.photoUri.startsWith('avatar:'));
-          const pixelAvatar = user?.pixelAvatar || DEFAULT_PIXEL_AVATAR;
-          const rawBg = pixelAvatar.backgroundColor || pixelAvatar.bgColor;
-          const avatarBgColor = (rawBg ? (rawBg.startsWith('#') ? rawBg : `#${rawBg}`) : user?.avatarBgColor) || (isDark ? '#3A231C' : '#FBECE8');
-
-          return (
-            <TouchableOpacity
-              onPress={handleOpenSettings}
-              style={[
-                styles.avatarButton,
-                {
-                  backgroundColor: avatarBgColor,
-                  borderColor: colors.primary,
-                },
-              ]}
-              activeOpacity={0.7}
-              accessibilityLabel="Open settings and profile"
-            >
-              {isActualPhoto && user?.photoUri ? (
-                <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
-              ) : (
-                <PixelAvatar config={pixelAvatar} size={34} />
-              )}
-            </TouchableOpacity>
-          );
-        },
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={handleOpenSettings}
+            style={[
+              styles.avatarButton,
+              {
+                backgroundColor: user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8'),
+                borderColor: colors.primary,
+              },
+            ]}
+            activeOpacity={0.7}
+            accessibilityLabel="Open settings and profile"
+          >
+            {user?.photoUri?.startsWith('avatar:') ? (
+              <Text style={styles.avatarEmojiText}>
+                {user.photoUri.replace('avatar:', '')}
+              </Text>
+            ) : user?.photoUri ? (
+              <Image source={{ uri: user.photoUri }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarEmojiText}>🧸</Text>
+            )}
+          </TouchableOpacity>
+        ),
         headerRightContainerStyle: {
           paddingRight: 16,
         },
