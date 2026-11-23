@@ -1,10 +1,16 @@
 export interface PixelAvatarConfig {
-  skinTone: string;
-  hairStyle: 'bun' | 'long' | 'bob' | 'ponytail';
-  hairColor: string;
-  glasses: 'none' | 'round' | 'square' | 'sunglasses';
-  outfitColor: string;
-  bgColor: string;
+  skinColor?: string;
+  skinTone?: string;
+  hair?: string;
+  hairStyle?: string;
+  hairColor?: string;
+  glasses?: string;
+  accessories?: string;
+  clothing?: string;
+  clothingColor?: string;
+  outfitColor?: string;
+  backgroundColor?: string;
+  bgColor?: string;
 }
 
 export interface User {

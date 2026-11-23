@@ -1,19 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
+import { SvgXml } from 'react-native-svg';
+import { createAvatar } from '@dicebear/core';
+import * as pixelArt from '@dicebear/pixel-art';
 import { PixelAvatarConfig } from '../types/auth';
 
 export interface SkinToneOption {
   id: string;
   label: string;
   color: string;
-  shadow: string;
 }
 
 export interface HairStyleOption {
-  id: 'bun' | 'long' | 'bob' | 'ponytail';
+  id: string;
   label: string;
   icon: string;
+  type?: 'updo' | 'long' | 'short';
 }
 
 export interface HairColorOption {
@@ -23,12 +25,24 @@ export interface HairColorOption {
 }
 
 export interface GlassesOption {
-  id: 'none' | 'round' | 'square' | 'sunglasses';
+  id: string;
   label: string;
   icon: string;
 }
 
-export interface OutfitColorOption {
+export interface AccessoryOption {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+export interface ClothingOption {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+export interface ClothingColorOption {
   id: string;
   label: string;
   color: string;
@@ -41,66 +55,154 @@ export interface BgColorOption {
 }
 
 export const SKIN_TONES: SkinToneOption[] = [
-  { id: 'porcelain', label: 'Porcelain', color: '#FDDFCA', shadow: '#E2BC9E' },
-  { id: 'peach', label: 'Warm Peach', color: '#F5C7A5', shadow: '#D9A47B' },
-  { id: 'honey', label: 'Golden Honey', color: '#DFA878', shadow: '#BD8353' },
-  { id: 'chestnut', label: 'Rich Tan', color: '#A86E45', shadow: '#8B512B' },
-  { id: 'espresso', label: 'Deep Espresso', color: '#65432B', shadow: '#4D2F1B' },
+  { id: 'ffd8b4', label: 'Porcelain', color: '#FFD8B4' },
+  { id: 'f5c7a5', label: 'Warm Peach', color: '#F5C7A5' },
+  { id: 'dfa878', label: 'Golden Honey', color: '#DFA878' },
+  { id: 'd09b68', label: 'Warm Sand', color: '#D09B68' },
+  { id: 'a86e45', label: 'Rich Tan', color: '#A86E45' },
+  { id: '65432b', label: 'Deep Espresso', color: '#65432B' },
 ];
 
 export const HAIR_STYLES: HairStyleOption[] = [
-  { id: 'bun', label: 'Messy Bun', icon: '🍡' },
-  { id: 'long', label: 'Long Waves', icon: '✨' },
-  { id: 'bob', label: 'Short Bob', icon: '🌿' },
-  { id: 'ponytail', label: 'Ponytail', icon: '🎀' },
+  { id: 'long16', label: 'Messy Bun', icon: '🍡', type: 'updo' },
+  { id: 'long01', label: 'Long Waves', icon: '✨', type: 'long' },
+  { id: 'long08', label: 'High Pony', icon: '🎀', type: 'updo' },
+  { id: 'long02', label: 'Straight Long', icon: '💫', type: 'long' },
+  { id: 'long19', label: 'Boho Braids', icon: '🌾', type: 'long' },
+  { id: 'short05', label: 'Chic Bob', icon: '🌿', type: 'short' },
+  { id: 'short01', label: 'Soft Pixie', icon: '✂️', type: 'short' },
+  { id: 'short03', label: 'Wavy Crop', icon: '🌊', type: 'short' },
+  { id: 'short16', label: 'Sleek Short', icon: '🌱', type: 'short' },
+  { id: 'short02', label: 'Clean Cut', icon: '⭐', type: 'short' },
 ];
 
 export const HAIR_COLORS: HairColorOption[] = [
-  { id: 'darkBrown', label: 'Dark Brown', color: '#3E2723' },
-  { id: 'softBlack', label: 'Soft Black', color: '#1F1F1F' },
-  { id: 'blonde', label: 'Golden Blonde', color: '#E4BA76' },
-  { id: 'auburn', label: 'Auburn', color: '#9E472A' },
-  { id: 'softPink', label: 'Soft Pink', color: '#E89EB8' },
-  { id: 'silver', label: 'Platinum Silver', color: '#B0B3B8' },
+  { id: '28150a', label: 'Espresso', color: '#28150A' },
+  { id: '1a1a1a', label: 'Soft Black', color: '#1A1A1A' },
+  { id: '603a14', label: 'Warm Cocoa', color: '#603A14' },
+  { id: 'a78961', label: 'Caramel', color: '#A78961' },
+  { id: 'cab188', label: 'Honey Blonde', color: '#CAB188' },
+  { id: '612616', label: 'Auburn', color: '#612616' },
+  { id: 'e89eb8', label: 'Pastel Rose', color: '#E89EB8' },
+  { id: 'b0b3b8', label: 'Silver', color: '#B0B3B8' },
 ];
 
 export const GLASSES_OPTIONS: GlassesOption[] = [
   { id: 'none', label: 'None', icon: '✕' },
-  { id: 'round', label: 'Round Gold', icon: '👓' },
-  { id: 'square', label: 'Square Black', icon: '🕶️' },
-  { id: 'sunglasses', label: 'Sunglasses', icon: '🕶' },
+  { id: 'light01', label: 'Round Gold', icon: '👓' },
+  { id: 'light02', label: 'Thin Frames', icon: '👓' },
+  { id: 'light05', label: 'Cat Eye', icon: '🕶️' },
+  { id: 'dark01', label: 'Square Black', icon: '🕶️' },
+  { id: 'dark03', label: 'Sun Shades', icon: '🕶' },
+  { id: 'dark05', label: 'Aviators', icon: '🕶️' },
 ];
 
-export const OUTFIT_COLORS: OutfitColorOption[] = [
-  { id: 'sage', label: 'Sage Green', color: '#7D9D8B' },
-  { id: 'charcoal', label: 'Charcoal', color: '#333333' },
-  { id: 'cream', label: 'Oat Cream', color: '#E8DFC8' },
-  { id: 'softPink', label: 'Soft Rose', color: '#D89595' },
-  { id: 'terracotta', label: 'Terracotta', color: '#C86D51' },
-  { id: 'lavender', label: 'Soft Lilac', color: '#9C8EB9' },
+export const ACCESSORIES_OPTIONS: AccessoryOption[] = [
+  { id: 'none', label: 'None', icon: '✕' },
+  { id: 'variant01', label: 'Earrings', icon: '✨' },
+  { id: 'variant02', label: 'Hoops', icon: '💫' },
+  { id: 'variant03', label: 'Studs', icon: '💎' },
+  { id: 'variant04', label: 'Hair Clip', icon: '🌸' },
+];
+
+export const CLOTHING_OPTIONS: ClothingOption[] = [
+  { id: 'variant01', label: 'Cozy Tee', icon: '👕' },
+  { id: 'variant02', label: 'Knit Sweater', icon: '🧶' },
+  { id: 'variant03', label: 'Minimal Top', icon: '🎽' },
+  { id: 'variant05', label: 'Collared', icon: '👔' },
+  { id: 'variant08', label: 'Robe / Kimono', icon: '👘' },
+  { id: 'variant14', label: 'Hoodie', icon: '🧥' },
+];
+
+export const CLOTHING_COLORS: ClothingColorOption[] = [
+  { id: '7d9d8b', label: 'Sage Green', color: '#7D9D8B' },
+  { id: 'c86d51', label: 'Terracotta', color: '#C86D51' },
+  { id: '333333', label: 'Charcoal', color: '#333333' },
+  { id: 'e8dfc8', label: 'Oat Cream', color: '#E8DFC8' },
+  { id: 'd89595', label: 'Soft Rose', color: '#D89595' },
+  { id: '9c8eb9', label: 'Soft Lilac', color: '#9C8EB9' },
 ];
 
 export const BG_COLORS: BgColorOption[] = [
-  { id: 'sage', label: 'Sage Tint', color: '#DCE8DE' },
-  { id: 'cream', label: 'Cream Tint', color: '#F7F2E7' },
-  { id: 'softPink', label: 'Soft Pink', color: '#FCE6EB' },
-  { id: 'lavender', label: 'Lavender', color: '#EBE5F7' },
-  { id: 'peach', label: 'Peach Tint', color: '#FCE8D5' },
-  { id: 'darkEspresso', label: 'Dark Roast', color: '#2D221D' },
+  { id: 'dce8de', label: 'Sage Tint', color: '#DCE8DE' },
+  { id: 'f7f2e7', label: 'Cream Tint', color: '#F7F2E7' },
+  { id: 'fce6eb', label: 'Soft Pink', color: '#FCE6EB' },
+  { id: 'ebe5f7', label: 'Lavender', color: '#EBE5F7' },
+  { id: 'fce8d5', label: 'Peach Tint', color: '#FCE8D5' },
+  { id: '2d221d', label: 'Dark Roast', color: '#2D221D' },
 ];
 
 export const DEFAULT_PIXEL_AVATAR: PixelAvatarConfig = {
-  skinTone: '#FDDFCA',
-  hairStyle: 'bun',
-  hairColor: '#3E2723',
+  skinColor: 'ffd8b4',
+  skinTone: '#FFD8B4',
+  hair: 'long16',
+  hairStyle: 'long16',
+  hairColor: '28150a',
   glasses: 'none',
+  accessories: 'none',
+  clothing: 'variant01',
+  clothingColor: '7d9d8b',
   outfitColor: '#7D9D8B',
+  backgroundColor: 'dce8de',
   bgColor: '#DCE8DE',
 };
 
-const getSkinShadow = (skinColor: string): string => {
-  const match = SKIN_TONES.find(s => s.color.toLowerCase() === skinColor.toLowerCase());
-  return match ? match.shadow : '#D9A47B';
+/**
+ * Clean hex string to bare lowercase hex without '#'
+ */
+export const cleanHex = (val?: string, fallback: string = 'dce8de'): string => {
+  if (!val) return fallback;
+  return val.replace(/^#/, '').toLowerCase();
+};
+
+/**
+ * Generate DiceBear pixel-art SVG string completely offline
+ */
+export const getPixelAvatarSvg = (config: PixelAvatarConfig = {}): string => {
+  const skin = cleanHex(config.skinColor || config.skinTone, 'ffd8b4');
+
+  let hairStyle = config.hair || config.hairStyle || 'long16';
+  // Map legacy names if present
+  if (hairStyle === 'bun') hairStyle = 'long16';
+  else if (hairStyle === 'bob') hairStyle = 'short05';
+  else if (hairStyle === 'long') hairStyle = 'long01';
+  else if (hairStyle === 'ponytail') hairStyle = 'long08';
+
+  const hairCol = cleanHex(config.hairColor, '28150a');
+
+  let glassesStyle = config.glasses || 'none';
+  if (glassesStyle === 'round') glassesStyle = 'light01';
+  else if (glassesStyle === 'square') glassesStyle = 'dark01';
+  else if (glassesStyle === 'sunglasses') glassesStyle = 'dark03';
+
+  const hasGlasses = Boolean(glassesStyle && glassesStyle !== 'none');
+
+  const acc = config.accessories || 'none';
+  const hasAcc = Boolean(acc && acc !== 'none');
+
+  const clothingVariant = config.clothing || 'variant01';
+  const clothingCol = cleanHex(config.clothingColor || config.outfitColor, '7d9d8b');
+  const bg = cleanHex(config.backgroundColor || config.bgColor, 'dce8de');
+
+  const options: Record<string, any> = {
+    skinColor: [skin],
+    hair: [hairStyle],
+    hairColor: [hairCol],
+    clothing: [clothingVariant],
+    clothingColor: [clothingCol],
+    backgroundColor: [bg],
+    glassesProbability: hasGlasses ? 100 : 0,
+    accessoriesProbability: hasAcc ? 100 : 0,
+  };
+
+  if (hasGlasses) {
+    options.glasses = [glassesStyle];
+  }
+  if (hasAcc) {
+    options.accessories = [acc];
+  }
+
+  return createAvatar(pixelArt, options).toString();
 };
 
 export interface PixelAvatarProps {
@@ -110,21 +212,38 @@ export interface PixelAvatarProps {
 }
 
 /**
- * PixelAvatar Component
- * Renders a crisp 24x24 pixel art portrait layered with SVG rects
+ * Upgraded PixelAvatar Component
+ * Powered by DiceBear Pixel Art for high-detail, offline-first vector avatars
  */
 export const PixelAvatar: React.FC<PixelAvatarProps> = ({
   config = DEFAULT_PIXEL_AVATAR,
   size = 48,
   style,
 }) => {
-  const skinTone = config.skinTone || DEFAULT_PIXEL_AVATAR.skinTone;
-  const skinShadow = getSkinShadow(skinTone);
-  const hairColor = config.hairColor || DEFAULT_PIXEL_AVATAR.hairColor;
-  const hairStyle = config.hairStyle || DEFAULT_PIXEL_AVATAR.hairStyle;
-  const glasses = config.glasses || DEFAULT_PIXEL_AVATAR.glasses;
-  const outfitColor = config.outfitColor || DEFAULT_PIXEL_AVATAR.outfitColor;
-  const bgColor = config.bgColor || DEFAULT_PIXEL_AVATAR.bgColor;
+  const svgXml = useMemo(() => {
+    try {
+      return getPixelAvatarSvg(config);
+    } catch (e) {
+      console.error('Error generating DiceBear pixel-art SVG:', e);
+      return '';
+    }
+  }, [
+    config?.skinColor,
+    config?.skinTone,
+    config?.hair,
+    config?.hairStyle,
+    config?.hairColor,
+    config?.glasses,
+    config?.accessories,
+    config?.clothing,
+    config?.clothingColor,
+    config?.outfitColor,
+    config?.backgroundColor,
+    config?.bgColor,
+  ]);
+
+  const bgHex = config?.backgroundColor || config?.bgColor || 'dce8de';
+  const backgroundColor = bgHex.startsWith('#') ? bgHex : `#${bgHex}`;
 
   return (
     <View
@@ -134,227 +253,12 @@ export const PixelAvatar: React.FC<PixelAvatarProps> = ({
           width: size,
           height: size,
           borderRadius: size / 2,
+          backgroundColor,
         },
         style,
       ]}
     >
-      <Svg width={size} height={size} viewBox="0 0 24 24">
-        {/* ======================================================== */}
-        {/* Layer 1: Background Fill                                */}
-        {/* ======================================================== */}
-        <Rect x={0} y={0} width={24} height={24} fill={bgColor} />
-
-        {/* ======================================================== */}
-        {/* Layer 2: Hair Back (Behind Neck & Body)                 */}
-        {/* ======================================================== */}
-        {hairStyle === 'long' && (
-          <>
-            <Rect x={4} y={11} width={3} height={13} fill={hairColor} />
-            <Rect x={17} y={11} width={3} height={13} fill={hairColor} />
-            <Rect x={5} y={23} width={2} height={1} fill={hairColor} />
-            <Rect x={17} y={23} width={2} height={1} fill={hairColor} />
-          </>
-        )}
-
-        {hairStyle === 'ponytail' && (
-          <>
-            <Rect x={15} y={5} width={4} height={2} fill={hairColor} />
-            <Rect x={17} y={7} width={4} height={4} fill={hairColor} />
-            <Rect x={18} y={11} width={4} height={6} fill={hairColor} />
-            <Rect x={19} y={17} width={2} height={2} fill={hairColor} />
-          </>
-        )}
-
-        {/* ======================================================== */}
-        {/* Layer 3: Body & Outfit                                  */}
-        {/* ======================================================== */}
-        {/* Shoulders */}
-        <Rect x={8} y={17} width={3} height={1} fill={outfitColor} />
-        <Rect x={13} y={17} width={3} height={1} fill={outfitColor} />
-        <Rect x={5} y={18} width={6} height={1} fill={outfitColor} />
-        <Rect x={13} y={18} width={6} height={1} fill={outfitColor} />
-        <Rect x={11} y={18} width={2} height={1} fill={outfitColor} opacity={0.85} />
-        <Rect x={4} y={19} width={16} height={1} fill={outfitColor} />
-        <Rect x={2} y={20} width={20} height={4} fill={outfitColor} />
-
-        {/* ======================================================== */}
-        {/* Layer 4: Neck & Face Base (Skin)                        */}
-        {/* ======================================================== */}
-        {/* Neck */}
-        <Rect x={10} y={15} width={4} height={2} fill={skinTone} />
-        <Rect x={10} y={15} width={4} height={1} fill={skinShadow} />
-        {/* Open collar skin notch */}
-        <Rect x={11} y={17} width={2} height={1} fill={skinTone} />
-
-        {/* Forehead & Face */}
-        <Rect x={8} y={7} width={8} height={1} fill={skinTone} />
-        <Rect x={7} y={8} width={10} height={6} fill={skinTone} />
-        {/* Jaw & Chin */}
-        <Rect x={8} y={14} width={8} height={1} fill={skinTone} />
-        <Rect x={9} y={15} width={6} height={1} fill={skinTone} />
-
-        {/* ======================================================== */}
-        {/* Layer 5: Face Details (Eyes, Catchlights, Blush, Lips)  */}
-        {/* ======================================================== */}
-        {/* Left Eye */}
-        <Rect x={9} y={11} width={1} height={1} fill="#FFFFFF" />
-        <Rect x={10} y={11} width={1} height={1} fill="#1D1A19" />
-        <Rect x={9} y={12} width={2} height={1} fill="#1D1A19" />
-
-        {/* Right Eye */}
-        <Rect x={13} y={11} width={1} height={1} fill="#FFFFFF" />
-        <Rect x={14} y={11} width={1} height={1} fill="#1D1A19" />
-        <Rect x={13} y={12} width={2} height={1} fill="#1D1A19" />
-
-        {/* Cute Pink Blush */}
-        <Rect x={7} y={13} width={2} height={1} fill="#FF8BA7" opacity={0.75} />
-        <Rect x={15} y={13} width={2} height={1} fill="#FF8BA7" opacity={0.75} />
-
-        {/* Cute Subtle Lip Smile */}
-        <Rect x={11} y={14} width={2} height={1} fill="#D16373" />
-
-        {/* Subtle Nose Shadow */}
-        <Rect x={11} y={13} width={2} height={1} fill={skinShadow} opacity={0.5} />
-
-        {/* ======================================================== */}
-        {/* Layer 6: Hair Front (Bangs, Top Bun, Sides)             */}
-        {/* ======================================================== */}
-        {hairStyle === 'bun' && (
-          <>
-            {/* Top Bun */}
-            <Rect x={10} y={2} width={4} height={1} fill={hairColor} />
-            <Rect x={9} y={3} width={6} height={3} fill={hairColor} />
-            <Rect x={10} y={6} width={4} height={1} fill={hairColor} />
-            {/* Bun Hair Tie / Scrunchie */}
-            <Rect x={11} y={6} width={2} height={1} fill={outfitColor} />
-            {/* Top Volume & Hairline */}
-            <Rect x={8} y={5} width={8} height={1} fill={hairColor} />
-            <Rect x={7} y={6} width={10} height={1} fill={hairColor} />
-            <Rect x={6} y={7} width={12} height={2} fill={hairColor} />
-            {/* Parted Bangs */}
-            <Rect x={6} y={9} width={4} height={1} fill={hairColor} />
-            <Rect x={14} y={9} width={4} height={1} fill={hairColor} />
-            {/* Face framing tendrils */}
-            <Rect x={6} y={10} width={1} height={4} fill={hairColor} />
-            <Rect x={17} y={10} width={1} height={4} fill={hairColor} />
-            {/* Cute stray wisps on bun */}
-            <Rect x={8} y={3} width={1} height={1} fill={hairColor} opacity={0.8} />
-            <Rect x={15} y={4} width={1} height={1} fill={hairColor} opacity={0.8} />
-          </>
-        )}
-
-        {hairStyle === 'long' && (
-          <>
-            {/* Top Volume */}
-            <Rect x={8} y={5} width={8} height={1} fill={hairColor} />
-            <Rect x={7} y={6} width={10} height={1} fill={hairColor} />
-            <Rect x={6} y={7} width={12} height={2} fill={hairColor} />
-            {/* Bangs */}
-            <Rect x={6} y={9} width={4} height={1} fill={hairColor} />
-            <Rect x={14} y={9} width={4} height={1} fill={hairColor} />
-            {/* Front Waves */}
-            <Rect x={5} y={10} width={2} height={9} fill={hairColor} />
-            <Rect x={17} y={10} width={2} height={9} fill={hairColor} />
-          </>
-        )}
-
-        {hairStyle === 'bob' && (
-          <>
-            {/* Top Volume */}
-            <Rect x={8} y={5} width={8} height={1} fill={hairColor} />
-            <Rect x={7} y={6} width={10} height={1} fill={hairColor} />
-            <Rect x={6} y={7} width={12} height={2} fill={hairColor} />
-            {/* Bangs */}
-            <Rect x={6} y={9} width={4} height={1} fill={hairColor} />
-            <Rect x={14} y={9} width={4} height={1} fill={hairColor} />
-            {/* Bob Sides */}
-            <Rect x={5} y={10} width={2} height={5} fill={hairColor} />
-            <Rect x={17} y={10} width={2} height={5} fill={hairColor} />
-            {/* Inward curve at chin */}
-            <Rect x={6} y={14} width={2} height={2} fill={hairColor} />
-            <Rect x={16} y={14} width={2} height={2} fill={hairColor} />
-          </>
-        )}
-
-        {hairStyle === 'ponytail' && (
-          <>
-            {/* Top Volume */}
-            <Rect x={8} y={5} width={8} height={1} fill={hairColor} />
-            <Rect x={7} y={6} width={10} height={1} fill={hairColor} />
-            <Rect x={6} y={7} width={12} height={2} fill={hairColor} />
-            {/* Scrunchie */}
-            <Rect x={15} y={5} width={2} height={2} fill={outfitColor} />
-            {/* Swept Bangs */}
-            <Rect x={6} y={9} width={3} height={1} fill={hairColor} />
-            <Rect x={15} y={9} width={3} height={1} fill={hairColor} />
-            {/* Wisps */}
-            <Rect x={6} y={10} width={1} height={3} fill={hairColor} />
-            <Rect x={17} y={10} width={1} height={2} fill={hairColor} />
-          </>
-        )}
-
-        {/* ======================================================== */}
-        {/* Layer 7: Glasses / Accessories                          */}
-        {/* ======================================================== */}
-        {glasses === 'round' && (
-          <>
-            {/* Left Frame */}
-            <Rect x={8} y={10} width={4} height={1} fill="#E6BE65" />
-            <Rect x={8} y={13} width={4} height={1} fill="#E6BE65" />
-            <Rect x={8} y={11} width={1} height={2} fill="#E6BE65" />
-            <Rect x={11} y={11} width={1} height={2} fill="#E6BE65" />
-
-            {/* Right Frame */}
-            <Rect x={12} y={10} width={4} height={1} fill="#E6BE65" />
-            <Rect x={12} y={13} width={4} height={1} fill="#E6BE65" />
-            <Rect x={12} y={11} width={1} height={2} fill="#E6BE65" />
-            <Rect x={15} y={11} width={1} height={2} fill="#E6BE65" />
-
-            {/* Bridge & Temples */}
-            <Rect x={11} y={11} width={2} height={1} fill="#E6BE65" />
-            <Rect x={7} y={11} width={1} height={1} fill="#E6BE65" />
-            <Rect x={16} y={11} width={1} height={1} fill="#E6BE65" />
-          </>
-        )}
-
-        {glasses === 'square' && (
-          <>
-            {/* Left Frame */}
-            <Rect x={8} y={10} width={4} height={1} fill="#222222" />
-            <Rect x={8} y={13} width={4} height={1} fill="#222222" />
-            <Rect x={8} y={11} width={1} height={2} fill="#222222" />
-            <Rect x={11} y={11} width={1} height={2} fill="#222222" />
-
-            {/* Right Frame */}
-            <Rect x={12} y={10} width={4} height={1} fill="#222222" />
-            <Rect x={12} y={13} width={4} height={1} fill="#222222" />
-            <Rect x={12} y={11} width={1} height={2} fill="#222222" />
-            <Rect x={15} y={11} width={1} height={2} fill="#222222" />
-
-            {/* Bridge & Temples */}
-            <Rect x={11} y={11} width={2} height={1} fill="#222222" />
-            <Rect x={7} y={11} width={1} height={1} fill="#222222" />
-            <Rect x={16} y={11} width={1} height={1} fill="#222222" />
-          </>
-        )}
-
-        {glasses === 'sunglasses' && (
-          <>
-            {/* Left Dark Lens */}
-            <Rect x={8} y={10} width={4} height={4} fill="#191919" />
-            <Rect x={9} y={10} width={1} height={1} fill="#FFFFFF" opacity={0.65} />
-
-            {/* Right Dark Lens */}
-            <Rect x={12} y={10} width={4} height={4} fill="#191919" />
-            <Rect x={13} y={10} width={1} height={1} fill="#FFFFFF" opacity={0.65} />
-
-            {/* Bridge & Temples */}
-            <Rect x={11} y={11} width={2} height={1} fill="#191919" />
-            <Rect x={7} y={11} width={1} height={1} fill="#191919" />
-            <Rect x={16} y={11} width={1} height={1} fill="#191919" />
-          </>
-        )}
-      </Svg>
+      {svgXml ? <SvgXml xml={svgXml} width={size} height={size} /> : null}
     </View>
   );
 };

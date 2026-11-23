@@ -207,7 +207,8 @@ export default function SettingsScreen() {
 
   const isActualPhoto = Boolean(photoUri && !photoUri.startsWith('avatar:'));
   const pixelAvatar = user?.pixelAvatar || DEFAULT_PIXEL_AVATAR;
-  const avatarBgColor = pixelAvatar.bgColor || user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8');
+  const rawBg = pixelAvatar.backgroundColor || pixelAvatar.bgColor;
+  const avatarBgColor = (rawBg ? (rawBg.startsWith('#') ? rawBg : `#${rawBg}`) : user?.avatarBgColor) || (isDark ? '#3A231C' : '#FBECE8');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>

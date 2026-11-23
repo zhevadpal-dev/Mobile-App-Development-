@@ -17,11 +17,17 @@ export const AVATAR_BG_COLOR_STORAGE_KEY = '@skin_diary_avatar_bg_color';
 export const PIXEL_AVATAR_STORAGE_KEY = '@skin_diary_pixel_avatar_config';
 
 export const DEFAULT_PIXEL_AVATAR_CONFIG: PixelAvatarConfig = {
-  skinTone: '#FDDFCA',
-  hairStyle: 'bun',
-  hairColor: '#3E2723',
+  skinColor: 'ffd8b4',
+  skinTone: '#FFD8B4',
+  hair: 'long16',
+  hairStyle: 'long16',
+  hairColor: '28150a',
   glasses: 'none',
+  accessories: 'none',
+  clothing: 'variant01',
+  clothingColor: '7d9d8b',
   outfitColor: '#7D9D8B',
+  backgroundColor: 'dce8de',
   bgColor: '#DCE8DE',
 };
 
@@ -241,6 +247,15 @@ export const updateStoredUserProfile = async (updates: {
       : {}),
     ...(updates.avatarBgColor !== undefined
       ? { avatarBgColor: updates.avatarBgColor || undefined }
+      : updates.pixelAvatar
+      ? {
+          avatarBgColor:
+            updates.pixelAvatar.backgroundColor
+              ? `#${updates.pixelAvatar.backgroundColor.replace(/^#/, '')}`
+              : updates.pixelAvatar.bgColor
+              ? `#${updates.pixelAvatar.bgColor.replace(/^#/, '')}`
+              : currentSession.user.avatarBgColor,
+        }
       : {}),
     ...(updates.pixelAvatar !== undefined
       ? { pixelAvatar: updates.pixelAvatar || undefined }

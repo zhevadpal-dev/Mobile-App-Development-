@@ -7,7 +7,6 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -22,13 +21,14 @@ import {
   HAIR_STYLES,
   HAIR_COLORS,
   GLASSES_OPTIONS,
-  OUTFIT_COLORS,
+  ACCESSORIES_OPTIONS,
+  CLOTHING_OPTIONS,
+  CLOTHING_COLORS,
   BG_COLORS,
+  cleanHex,
 } from './PixelAvatar';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-type CategoryTab = 'hair' | 'skin' | 'glasses' | 'outfit' | 'backdrop';
+type CategoryTab = 'hair' | 'skin' | 'glasses' | 'accessories' | 'outfit' | 'backdrop';
 
 export interface AvatarCreatorModalProps {
   visible: boolean;
@@ -61,6 +61,9 @@ export default function AvatarCreatorModal({
       } else {
         setConfig({
           ...DEFAULT_PIXEL_AVATAR,
+          backgroundColor: user?.avatarBgColor
+            ? cleanHex(user.avatarBgColor)
+            : DEFAULT_PIXEL_AVATAR.backgroundColor,
           bgColor: user?.avatarBgColor || DEFAULT_PIXEL_AVATAR.bgColor,
         });
       }
@@ -68,32 +71,61 @@ export default function AvatarCreatorModal({
   }, [visible, user?.pixelAvatar, user?.avatarBgColor]);
 
   const handleRandomize = () => {
-    const randomSkin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)].color;
-    const randomHairStyle = HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id;
-    const randomHairColor = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].color;
+    const randomSkin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)].id;
+    const randomHair = HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id;
+    const randomHairColor = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].id;
     const randomGlasses = GLASSES_OPTIONS[Math.floor(Math.random() * GLASSES_OPTIONS.length)].id;
-    const randomOutfit = OUTFIT_COLORS[Math.floor(Math.random() * OUTFIT_COLORS.length)].color;
-    const randomBg = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)].color;
+    const randomAcc = ACCESSORIES_OPTIONS[Math.floor(Math.random() * ACCESSORIES_OPTIONS.length)].id;
+    const randomClothing = CLOTHING_OPTIONS[Math.floor(Math.random() * CLOTHING_OPTIONS.length)].id;
+    const randomClothingColor = CLOTHING_COLORS[Math.floor(Math.random() * CLOTHING_COLORS.length)].id;
+    const randomBg = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)].id;
 
     setConfig({
-      skinTone: randomSkin,
-      hairStyle: randomHairStyle,
+      skinColor: randomSkin,
+      skinTone: `#${randomSkin}`,
+      hair: randomHair,
+      hairStyle: randomHair,
       hairColor: randomHairColor,
       glasses: randomGlasses,
-      outfitColor: randomOutfit,
-      bgColor: randomBg,
+      accessories: randomAcc,
+      clothing: randomClothing,
+      clothingColor: randomClothingColor,
+      outfitColor: `#${randomClothingColor}`,
+      backgroundColor: randomBg,
+      bgColor: `#${randomBg}`,
     });
   };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      const bgHex = config.backgroundColor || config.bgColor || 'dce8de';
+      const cleanBg = cleanHex(bgHex);
+      const formattedBg = `#${cleanBg}`;
+
+      const finalConfig: PixelAvatarConfig = {
+        ...config,
+        skinColor: cleanHex(config.skinColor || config.skinTone, 'ffd8b4'),
+        skinTone: config.skinTone || `#${cleanHex(config.skinColor, 'ffd8b4')}`,
+        hair: config.hair || config.hairStyle || 'long16',
+        hairStyle: config.hair || config.hairStyle || 'long16',
+        hairColor: cleanHex(config.hairColor, '28150a'),
+        glasses: config.glasses || 'none',
+        accessories: config.accessories || 'none',
+        clothing: config.clothing || 'variant01',
+        clothingColor: cleanHex(config.clothingColor || config.outfitColor, '7d9d8b'),
+        outfitColor: config.outfitColor || `#${cleanHex(config.clothingColor, '7d9d8b')}`,
+        backgroundColor: cleanBg,
+        bgColor: formattedBg,
+      };
+
       await updateProfile({
-        pixelAvatar: config,
-        photoUri: null, // Clear photoUri so pixel avatar becomes active immediately
-        avatarBgColor: config.bgColor,
+        pixelAvatar: finalConfig,
+        photoUri: null, // Clear photoUri so pixel avatar takes priority immediately
+        avatarBgColor: formattedBg,
       });
-      onSaved?.(config);
+
+      onSaved?.(finalConfig);
       onClose();
     } catch (error) {
       console.error('Failed to save pixel avatar:', error);
@@ -106,9 +138,19 @@ export default function AvatarCreatorModal({
     { key: 'hair', label: isTr ? 'Saç' : 'Hair', icon: '💇' },
     { key: 'skin', label: isTr ? 'Ten' : 'Skin', icon: '✨' },
     { key: 'glasses', label: isTr ? 'Gözlük' : 'Glasses', icon: '👓' },
+    { key: 'accessories', label: isTr ? 'Aksesuar' : 'Accessories', icon: '💎' },
     { key: 'outfit', label: isTr ? 'Kıyafet' : 'Outfit', icon: '👘' },
     { key: 'backdrop', label: isTr ? 'Arka Plan' : 'Backdrop', icon: '🎨' },
   ];
+
+  const currentSkin = cleanHex(config.skinColor || config.skinTone, 'ffd8b4');
+  const currentHair = config.hair || config.hairStyle || 'long16';
+  const currentHairColor = cleanHex(config.hairColor, '28150a');
+  const currentGlasses = config.glasses || 'none';
+  const currentAcc = config.accessories || 'none';
+  const currentClothing = config.clothing || 'variant01';
+  const currentClothingColor = cleanHex(config.clothingColor || config.outfitColor, '7d9d8b');
+  const currentBg = cleanHex(config.backgroundColor || config.bgColor, 'dce8de');
 
   return (
     <Modal
@@ -141,12 +183,12 @@ export default function AvatarCreatorModal({
           <View style={styles.headerRow}>
             <View style={styles.headerTextGroup}>
               <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-                {isTr ? '8-Bit Avatar Oluşturucu' : '8-Bit Pixel Avatar'}
+                {isTr ? '8-Bit Piksel Avatar' : '8-Bit Pixel Avatar'}
               </Text>
               <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
                 {isTr
-                  ? 'Kişiselleştirilmiş retro cilt ritüeli portren'
-                  : 'Customize your cozy retro skincare portrait'}
+                  ? 'DiceBear destekli yüksek detaylı cilt ritüeli portren'
+                  : 'High-detail retro skincare portrait powered by DiceBear'}
               </Text>
             </View>
 
@@ -175,7 +217,7 @@ export default function AvatarCreatorModal({
             ]}
           >
             <View style={styles.avatarPreviewRing}>
-              <PixelAvatar config={config} size={112} />
+              <PixelAvatar config={config} size={116} />
             </View>
 
             <TouchableOpacity
@@ -246,7 +288,7 @@ export default function AvatarCreatorModal({
             contentContainerStyle={styles.optionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* 1. Hair Options */}
+            {/* 1. Hair Tab */}
             {activeTab === 'hair' && (
               <View style={styles.tabSection}>
                 <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
@@ -254,11 +296,17 @@ export default function AvatarCreatorModal({
                 </Text>
                 <View style={styles.chipsRow}>
                   {HAIR_STYLES.map(style => {
-                    const isSelected = config.hairStyle === style.id;
+                    const isSelected = currentHair === style.id;
                     return (
                       <TouchableOpacity
                         key={style.id}
-                        onPress={() => setConfig(prev => ({ ...prev, hairStyle: style.id }))}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            hair: style.id,
+                            hairStyle: style.id,
+                          }))
+                        }
                         style={[
                           styles.chipButton,
                           {
@@ -301,12 +349,16 @@ export default function AvatarCreatorModal({
                 </Text>
                 <View style={styles.swatchesRow}>
                   {HAIR_COLORS.map(colorOpt => {
-                    const isSelected =
-                      config.hairColor.toLowerCase() === colorOpt.color.toLowerCase();
+                    const isSelected = currentHairColor === colorOpt.id;
                     return (
                       <TouchableOpacity
                         key={colorOpt.id}
-                        onPress={() => setConfig(prev => ({ ...prev, hairColor: colorOpt.color }))}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            hairColor: colorOpt.id,
+                          }))
+                        }
                         style={[
                           styles.swatchWrapper,
                           isSelected && { borderColor: colors.primary, borderWidth: 2.5 },
@@ -322,7 +374,7 @@ export default function AvatarCreatorModal({
               </View>
             )}
 
-            {/* 2. Skin Tone Options */}
+            {/* 2. Skin Tab */}
             {activeTab === 'skin' && (
               <View style={styles.tabSection}>
                 <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
@@ -330,12 +382,17 @@ export default function AvatarCreatorModal({
                 </Text>
                 <View style={styles.swatchesRow}>
                   {SKIN_TONES.map(tone => {
-                    const isSelected =
-                      config.skinTone.toLowerCase() === tone.color.toLowerCase();
+                    const isSelected = currentSkin === tone.id;
                     return (
                       <TouchableOpacity
                         key={tone.id}
-                        onPress={() => setConfig(prev => ({ ...prev, skinTone: tone.color }))}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            skinColor: tone.id,
+                            skinTone: tone.color,
+                          }))
+                        }
                         style={[
                           styles.swatchWrapper,
                           isSelected && { borderColor: colors.primary, borderWidth: 2.5 },
@@ -351,19 +408,24 @@ export default function AvatarCreatorModal({
               </View>
             )}
 
-            {/* 3. Glasses / Accessories Options */}
+            {/* 3. Glasses Tab */}
             {activeTab === 'glasses' && (
               <View style={styles.tabSection}>
                 <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
-                  {isTr ? 'GÖZLÜK & AKSESUAR' : 'GLASSES & ACCENTS'}
+                  {isTr ? 'GÖZLÜK SEÇENEKLERİ' : 'GLASSES & SHADES'}
                 </Text>
                 <View style={styles.chipsRow}>
                   {GLASSES_OPTIONS.map(opt => {
-                    const isSelected = config.glasses === opt.id;
+                    const isSelected = currentGlasses === opt.id;
                     return (
                       <TouchableOpacity
                         key={opt.id}
-                        onPress={() => setConfig(prev => ({ ...prev, glasses: opt.id }))}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            glasses: opt.id,
+                          }))
+                        }
                         style={[
                           styles.chipButton,
                           {
@@ -398,21 +460,128 @@ export default function AvatarCreatorModal({
               </View>
             )}
 
-            {/* 4. Outfit Color Options */}
+            {/* 4. Accessories Tab */}
+            {activeTab === 'accessories' && (
+              <View style={styles.tabSection}>
+                <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
+                  {isTr ? 'SEVİMLİ AKSESUARLAR' : 'CUTE ACCESSORIES'}
+                </Text>
+                <View style={styles.chipsRow}>
+                  {ACCESSORIES_OPTIONS.map(acc => {
+                    const isSelected = currentAcc === acc.id;
+                    return (
+                      <TouchableOpacity
+                        key={acc.id}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            accessories: acc.id,
+                          }))
+                        }
+                        style={[
+                          styles.chipButton,
+                          {
+                            backgroundColor: isSelected
+                              ? isDark
+                                ? '#38251E'
+                                : '#F6EAE5'
+                              : isDark
+                              ? '#25211E'
+                              : '#F4F1EB',
+                            borderColor: isSelected ? colors.primary : 'transparent',
+                          },
+                        ]}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={styles.chipIcon}>{acc.icon}</Text>
+                        <Text
+                          style={[
+                            styles.chipText,
+                            {
+                              color: isSelected ? colors.primary : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {acc.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* 5. Outfit Tab */}
             {activeTab === 'outfit' && (
               <View style={styles.tabSection}>
                 <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
-                  {isTr ? 'KIYAFET RENGİ' : 'OUTFIT PALETTE'}
+                  {isTr ? 'KIYAFET MODELİ' : 'CLOTHING STYLE'}
+                </Text>
+                <View style={styles.chipsRow}>
+                  {CLOTHING_OPTIONS.map(style => {
+                    const isSelected = currentClothing === style.id;
+                    return (
+                      <TouchableOpacity
+                        key={style.id}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            clothing: style.id,
+                          }))
+                        }
+                        style={[
+                          styles.chipButton,
+                          {
+                            backgroundColor: isSelected
+                              ? isDark
+                                ? '#38251E'
+                                : '#F6EAE5'
+                              : isDark
+                              ? '#25211E'
+                              : '#F4F1EB',
+                            borderColor: isSelected ? colors.primary : 'transparent',
+                          },
+                        ]}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={styles.chipIcon}>{style.icon}</Text>
+                        <Text
+                          style={[
+                            styles.chipText,
+                            {
+                              color: isSelected ? colors.primary : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {style.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text
+                  style={[
+                    styles.subSectionTitle,
+                    { color: colors.textSecondary, marginTop: SPACING.md },
+                  ]}
+                >
+                  {isTr ? 'KIYAFET RENGİ' : 'OUTFIT COLOR'}
                 </Text>
                 <View style={styles.swatchesRow}>
-                  {OUTFIT_COLORS.map(colorOpt => {
-                    const isSelected =
-                      config.outfitColor.toLowerCase() === colorOpt.color.toLowerCase();
+                  {CLOTHING_COLORS.map(colorOpt => {
+                    const isSelected = currentClothingColor === colorOpt.id;
                     return (
                       <TouchableOpacity
                         key={colorOpt.id}
                         onPress={() =>
-                          setConfig(prev => ({ ...prev, outfitColor: colorOpt.color }))
+                          setConfig(prev => ({
+                            ...prev,
+                            clothingColor: colorOpt.id,
+                            outfitColor: colorOpt.color,
+                          }))
                         }
                         style={[
                           styles.swatchWrapper,
@@ -429,7 +598,7 @@ export default function AvatarCreatorModal({
               </View>
             )}
 
-            {/* 5. Backdrop Color Options */}
+            {/* 6. Backdrop Tab */}
             {activeTab === 'backdrop' && (
               <View style={styles.tabSection}>
                 <Text style={[styles.subSectionTitle, { color: colors.textSecondary }]}>
@@ -437,12 +606,17 @@ export default function AvatarCreatorModal({
                 </Text>
                 <View style={styles.swatchesRow}>
                   {BG_COLORS.map(colorOpt => {
-                    const isSelected =
-                      config.bgColor.toLowerCase() === colorOpt.color.toLowerCase();
+                    const isSelected = currentBg === colorOpt.id;
                     return (
                       <TouchableOpacity
                         key={colorOpt.id}
-                        onPress={() => setConfig(prev => ({ ...prev, bgColor: colorOpt.color }))}
+                        onPress={() =>
+                          setConfig(prev => ({
+                            ...prev,
+                            backgroundColor: colorOpt.id,
+                            bgColor: colorOpt.color,
+                          }))
+                        }
                         style={[
                           styles.swatchWrapper,
                           isSelected && { borderColor: colors.primary, borderWidth: 2.5 },

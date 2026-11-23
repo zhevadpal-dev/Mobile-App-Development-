@@ -65,7 +65,8 @@ export default function TabNavigator() {
         headerRight: () => {
           const isActualPhoto = Boolean(user?.photoUri && !user.photoUri.startsWith('avatar:'));
           const pixelAvatar = user?.pixelAvatar || DEFAULT_PIXEL_AVATAR;
-          const avatarBgColor = pixelAvatar.bgColor || user?.avatarBgColor || (isDark ? '#3A231C' : '#FBECE8');
+          const rawBg = pixelAvatar.backgroundColor || pixelAvatar.bgColor;
+          const avatarBgColor = (rawBg ? (rawBg.startsWith('#') ? rawBg : `#${rawBg}`) : user?.avatarBgColor) || (isDark ? '#3A231C' : '#FBECE8');
 
           return (
             <TouchableOpacity
