@@ -36,6 +36,8 @@ import {
   deleteProduct,
   updateProduct,
 } from '../services/productStorage';
+import { checkCabinetMilestones } from '../services/milestoneService';
+import { MilestoneDefinition } from '../types/milestone';
 
 /**
  * Mask Type definition with smart auto-filled recommended defaults
@@ -276,6 +278,19 @@ export default function CabinetScreen() {
   const [editImageUri, setEditImageUri] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
 
+  // Milestones celebratory toast
+  const [unlockedMilestone, setUnlockedMilestone] = useState<MilestoneDefinition | null>(null);
+  const [showMilestoneToast, setShowMilestoneToast] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (showMilestoneToast) {
+      const timer = setTimeout(() => {
+        setShowMilestoneToast(false);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [showMilestoneToast]);
+
   /**
    * Auto-fill mask defaults based on mask type selection
    */
@@ -333,6 +348,17 @@ export default function CabinetScreen() {
       });
 
       setProducts(sorted);
+
+      if (sorted.length >= 5) {
+        checkCabinetMilestones(sorted.length)
+          .then(newly => {
+            if (newly.length > 0) {
+              setUnlockedMilestone(newly[0]);
+              setShowMilestoneToast(true);
+            }
+          })
+          .catch(() => {});
+      }
     } catch (error) {
       console.error('Failed to load products:', error);
       Alert.alert('Error', 'Unable to load products from storage.');
@@ -2089,6 +2115,41 @@ export default function CabinetScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Floating Celebratory Milestone Toast Banner */}
+      {showMilestoneToast && unlockedMilestone && (
+        <View style={styles.toastContainer} pointerEvents="box-none">
+          <TouchableOpacity
+            style={[
+              styles.toastCard,
+              {
+                backgroundColor: isDark ? '#26201B' : '#FFFDF9',
+                borderColor: isDark ? 'rgba(217, 130, 107, 0.45)' : 'rgba(217, 130, 107, 0.35)',
+              },
+            ]}
+            onPress={() => setShowMilestoneToast(false)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.toastIconCircle}>
+              <Text style={styles.toastIconEmoji}>{unlockedMilestone.icon}</Text>
+            </View>
+            <View style={styles.toastTextCol}>
+              <Text style={[styles.toastTitle, { color: colors.primary }]}>
+                {t('milestoneUnlockedToast')}
+              </Text>
+              <Text style={[styles.toastSubtitle, { color: colors.textPrimary }]} numberOfLines={1}>
+                {t(unlockedMilestone.titleKey as any)}: {t(unlockedMilestone.descKey as any)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowMilestoneToast(false)}
+              style={styles.toastCloseBtn}
+            >
+              <Ionicons name="close" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -2792,5 +2853,53 @@ const styles = StyleSheet.create({
   },
   maskPrefText: {
     fontSize: 11,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 20,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    elevation: 10,
+  },
+  toastCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+    gap: 10,
+  },
+  toastIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(217, 130, 107, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastIconEmoji: {
+    fontSize: 20,
+  },
+  toastTextCol: {
+    flex: 1,
+  },
+  toastTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  toastSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  toastCloseBtn: {
+    padding: 4,
   },
 });

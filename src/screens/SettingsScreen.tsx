@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,13 +16,18 @@ import {
   ActionSheetIOS,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { TranslationKey } from '../constants/translations';
 import { SPACING, RADIUS } from '../constants/theme';
 import AvatarPickerModal from '../components/AvatarPickerModal';
+import {
+  getMilestonesData,
+  MILESTONE_DEFINITIONS,
+} from '../services/milestoneService';
+import { UserMilestonesData } from '../types/milestone';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
@@ -36,6 +41,43 @@ export default function SettingsScreen() {
   const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [isSavingName, setIsSavingName] = useState(false);
   const [hasUnsavedNameChange, setHasUnsavedNameChange] = useState(false);
+
+  // Milestones & Ritual Streaks Data
+  const [milestonesData, setMilestonesData] = useState<UserMilestonesData>({
+    completedDates: [],
+    currentStreak: 0,
+    longestStreak: 0,
+    unlockedMilestones: {},
+  });
+
+  const loadMilestones = useCallback(async () => {
+    try {
+      const data = await getMilestonesData();
+      setMilestonesData(data);
+    } catch (e) {
+      console.warn('Failed to load milestones in SettingsScreen:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMilestones();
+    }, [loadMilestones])
+  );
+
+  const formatUnlockDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   useEffect(() => {
     setName(user?.name || '');
@@ -364,7 +406,153 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Section 2: App Settings / Preferences */}
+        {/* Section 2: Milestones & Achievements Showcase */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionEyebrow, { color: colors.textMuted }]}>
+              {t('milestonesSectionTitle')}
+            </Text>
+            {milestonesData.currentStreak > 0 ? (
+              <View style={styles.streakBadgeSmall}>
+                <Text style={styles.streakBadgeFire}>🔥</Text>
+                <Text style={[styles.streakBadgeText, { color: colors.primary }]}>
+                  {milestonesData.currentStreak}{' '}
+                  {milestonesData.currentStreak === 1
+                    ? t('streakDaySingle')
+                    : t('streakDaysCount')}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Luxury Streak Overview Card */}
+          <View
+            style={[
+              styles.streakOverviewCard,
+              {
+                backgroundColor: isDark ? '#1C1B19' : '#FAF8F5',
+                borderColor: colors.cardBorder,
+              },
+            ]}
+          >
+            <View style={styles.streakCol}>
+              <Text style={[styles.streakStatNumber, { color: colors.primary }]}>
+                {milestonesData.currentStreak}
+              </Text>
+              <Text style={[styles.streakStatLabel, { color: colors.textSecondary }]}>
+                {t('currentStreakLabel')}
+              </Text>
+            </View>
+
+            <View style={[styles.streakDivider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.streakCol}>
+              <Text style={[styles.streakStatNumber, { color: colors.secondary }]}>
+                {milestonesData.longestStreak}
+              </Text>
+              <Text style={[styles.streakStatLabel, { color: colors.textSecondary }]}>
+                {t('longestStreakLabel')}
+              </Text>
+            </View>
+
+            <View style={[styles.streakDivider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.streakCol}>
+              <Text style={[styles.streakStatNumber, { color: colors.textPrimary }]}>
+                {Object.keys(milestonesData.unlockedMilestones).length}/{MILESTONE_DEFINITIONS.length}
+              </Text>
+              <Text style={[styles.streakStatLabel, { color: colors.textSecondary }]}>
+                {t('milestonesSectionTitle')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Milestones 2-Column Luxury Grid */}
+          <View style={styles.milestonesGrid}>
+            {MILESTONE_DEFINITIONS.map(item => {
+              const unlockDate = milestonesData.unlockedMilestones[item.id];
+              const isUnlocked = !!unlockDate;
+
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.milestoneCard,
+                    {
+                      backgroundColor: isUnlocked
+                        ? isDark ? '#261F1C' : '#FFFDF9'
+                        : isDark ? '#161514' : '#F7F5F2',
+                      borderColor: isUnlocked
+                        ? isDark ? 'rgba(217, 130, 107, 0.45)' : 'rgba(217, 130, 107, 0.35)'
+                        : isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)',
+                      opacity: isUnlocked ? 1 : 0.72,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.milestoneIconWrap,
+                      {
+                        backgroundColor: isUnlocked
+                          ? isDark ? 'rgba(217, 130, 107, 0.22)' : 'rgba(217, 130, 107, 0.12)'
+                          : isDark ? '#22201E' : '#EAE6E1',
+                      },
+                    ]}
+                  >
+                    <Text style={styles.milestoneIconEmoji}>{item.icon}</Text>
+                    {!isUnlocked && (
+                      <View style={styles.milestoneLockBadge}>
+                        <Text style={styles.milestoneLockEmoji}>🔒</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.milestoneCardTitle,
+                      {
+                        color: isUnlocked ? colors.textPrimary : colors.textMuted,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {t(item.titleKey as any)}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.milestoneCardDesc,
+                      {
+                        color: isUnlocked ? colors.textSecondary : colors.textMuted,
+                      },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {isUnlocked ? t(item.descKey as any) : t(item.hintKey as any)}
+                  </Text>
+
+                  <View style={styles.milestoneStatusRow}>
+                    {isUnlocked ? (
+                      <View style={styles.unlockedTag}>
+                        <Text style={[styles.unlockedTagText, { color: colors.primary }]}>
+                          ✓ {t('unlockedOn')} {formatUnlockDate(unlockDate)}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.lockedTag}>
+                        <Text style={[styles.lockedTagText, { color: colors.textMuted }]}>
+                          {t('lockedBadge')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Section 3: App Settings / Preferences */}
         <View style={styles.section}>
           <Text style={[styles.sectionEyebrow, { color: colors.textMuted }]}>
             {t('appSettings')}
@@ -1047,5 +1235,122 @@ const styles = StyleSheet.create({
   sheetCancelText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xs,
+  },
+  streakBadgeSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  streakBadgeFire: {
+    fontSize: 14,
+  },
+  streakBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  streakOverviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  streakCol: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  streakStatNumber: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  streakStatLabel: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  streakDivider: {
+    width: 1,
+    height: 26,
+  },
+  milestonesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  milestoneCard: {
+    width: '48.5%',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    padding: 12,
+  },
+  milestoneIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    position: 'relative',
+  },
+  milestoneIconEmoji: {
+    fontSize: 22,
+  },
+  milestoneLockBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#333333',
+    borderRadius: 7,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+  },
+  milestoneLockEmoji: {
+    fontSize: 9,
+  },
+  milestoneCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  milestoneCardDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: 8,
+    minHeight: 30,
+  },
+  milestoneStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  unlockedTag: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    backgroundColor: 'rgba(217, 130, 107, 0.12)',
+  },
+  unlockedTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  lockedTag: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  lockedTagText: {
+    fontSize: 10,
+    fontWeight: '500',
   },
 });

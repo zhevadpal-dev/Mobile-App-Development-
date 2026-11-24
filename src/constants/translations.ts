@@ -91,6 +91,47 @@ export const TRANSLATIONS = {
     maskWeekendBadge: 'Weekends only',
     maskAnyDayBadge: 'Any day',
 
+    // Affirmations & Milestones
+    morningAffirmationTitle: 'Morning Ritual Complete ✨',
+    eveningAffirmationTitle: 'Evening Ritual Complete 🌙',
+    affirmationDailyQuote: 'Daily Skin Affirmation',
+    affirmationDismiss: 'Glow On',
+    milestonesSectionTitle: 'Milestones',
+    milestonesSectionSubtitle: 'Consistency badges and mindful achievements',
+    streakCardTitle: 'Ritual Streak',
+    currentStreakLabel: 'Current Streak',
+    longestStreakLabel: 'Best Streak',
+    streakDaysCount: 'days',
+    streakDaySingle: 'day',
+    milestoneUnlockedToast: 'Milestone Unlocked! 🎉',
+    unlockedOn: 'Unlocked',
+    lockedBadge: 'Locked',
+
+    // Milestones definitions
+    milestoneFirstRitualTitle: 'First Ritual',
+    milestoneFirstRitualDesc: 'Completed your very first routine.',
+    milestoneFirstRitualHint: 'Complete your first routine',
+
+    milestoneStreak3Title: '3-Day Glow',
+    milestoneStreak3Desc: '3 consecutive days of mindful skincare.',
+    milestoneStreak3Hint: 'Complete routines 3 days in a row',
+
+    milestoneStreak7Title: '7-Day Devotion',
+    milestoneStreak7Desc: 'A full week of consistent self-care.',
+    milestoneStreak7Hint: 'Complete routines 7 days in a row',
+
+    milestoneStreak14Title: 'Glow Master',
+    milestoneStreak14Desc: '14 days of dedicated skincare rituals.',
+    milestoneStreak14Hint: 'Complete routines 14 days in a row',
+
+    milestoneCabinet5Title: 'Curated Shelf',
+    milestoneCabinet5Desc: 'Added 5 or more products to your Cabinet.',
+    milestoneCabinet5Hint: 'Add 5+ products to your Cabinet',
+
+    milestoneMaskRitualTitle: 'Self-Care Mask',
+    milestoneMaskRitualDesc: 'Completed a scheduled pampering mask step.',
+    milestoneMaskRitualHint: 'Complete a scheduled mask step',
+
     // Cabinet Screen
     digitalCabinet: 'DIGITAL CABINET',
     cabinetTitle: 'Product Cabinet',
@@ -412,6 +453,47 @@ export const TRANSLATIONS = {
     dayWeekendsOnly: 'Sadece hafta sonu',
     maskWeekendBadge: 'Hafta sonu',
     maskAnyDayBadge: 'Her gün',
+
+    // Affirmations & Milestones
+    morningAffirmationTitle: 'Sabah Ritüeli Tamamlandı ✨',
+    eveningAffirmationTitle: 'Akşam Ritüeli Tamamlandı 🌙',
+    affirmationDailyQuote: 'Günün Cilt Olumlaması',
+    affirmationDismiss: 'Işıltıyla Devam Et',
+    milestonesSectionTitle: 'Başarılar',
+    milestonesSectionSubtitle: 'Ritüel tutarlılık rozetleri ve kazanımları',
+    streakCardTitle: 'Ritüel Serisi',
+    currentStreakLabel: 'Mevcut Seri',
+    longestStreakLabel: 'En İyi Seri',
+    streakDaysCount: 'gün',
+    streakDaySingle: 'gün',
+    milestoneUnlockedToast: 'Yeni Başarı Açıldı! 🎉',
+    unlockedOn: 'Kazanıldı',
+    lockedBadge: 'Kilitli',
+
+    // Milestones definitions
+    milestoneFirstRitualTitle: 'İlk Ritüel',
+    milestoneFirstRitualDesc: 'İlk cilt bakım rutininizi tamamladınız.',
+    milestoneFirstRitualHint: 'İlk rutininizi tamamlayın',
+
+    milestoneStreak3Title: '3 Günlük Işıltı',
+    milestoneStreak3Desc: '3 gün boyunca kesintisiz cilt bakımı.',
+    milestoneStreak3Hint: '3 gün üst üste rutininizi tamamlayın',
+
+    milestoneStreak7Title: '7 Günlük Bağlılık',
+    milestoneStreak7Desc: 'Tam bir hafta boyunca düzenli öz bakım.',
+    milestoneStreak7Hint: '7 gün üst üste rutininizi tamamlayın',
+
+    milestoneStreak14Title: 'Işıltı Ustası',
+    milestoneStreak14Desc: '14 gün boyunca aralıksız bilinçli cilt bakımı.',
+    milestoneStreak14Hint: '14 gün üst üste rutininizi tamamlayın',
+
+    milestoneCabinet5Title: 'Küratör Dolap',
+    milestoneCabinet5Desc: 'Dijital Dolabınıza 5 veya daha fazla ürün eklediniz.',
+    milestoneCabinet5Hint: 'Dolabınıza 5 veya daha fazla ürün ekleyin',
+
+    milestoneMaskRitualTitle: 'Maske Ritüeli',
+    milestoneMaskRitualDesc: 'Planlanmış bir maske adımını tamamladınız.',
+    milestoneMaskRitualHint: 'Planlanmış bir maske adımını tamamlayın',
 
     // Cabinet Screen
     digitalCabinet: 'DİJİTAL DOLAP',

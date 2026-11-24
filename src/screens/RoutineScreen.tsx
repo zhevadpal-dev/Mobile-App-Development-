@@ -9,6 +9,7 @@ import {
   Modal,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +21,12 @@ import { RootTabParamList } from '../types/navigation';
 import { Product, RoutineType } from '../types/product';
 import { getProducts, updateProduct } from '../services/productStorage';
 import { getCategoryLabel, getCategoryMeta } from './CabinetScreen';
+import {
+  recordRoutineCompletion,
+  recordMaskStepCompletion,
+  getRandomAffirmation,
+} from '../services/milestoneService';
+import { MilestoneDefinition } from '../types/milestone';
 
 const ROUTINE_COMPLETION_STORAGE_KEY = '@skin_diary_routine_completed_steps';
 
@@ -150,7 +157,7 @@ const sortProductsForRoutine = (prods: Product[]): Product[] => {
 
 export default function RoutineScreen() {
   const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigation = useNavigation<NavigationProp<RootTabParamList>>();
 
   // Active routine tab ('AM' or 'PM')
@@ -165,6 +172,22 @@ export default function RoutineScreen() {
   // Modals
   const [isUvModalVisible, setIsUvModalVisible] = useState<boolean>(false);
   const [isCabinetPickerVisible, setIsCabinetPickerVisible] = useState<boolean>(false);
+
+  // Affirmation & Milestones
+  const [isAffirmationVisible, setIsAffirmationVisible] = useState<boolean>(false);
+  const [currentAffirmation, setCurrentAffirmation] = useState<string>('');
+  const [unlockedMilestone, setUnlockedMilestone] = useState<MilestoneDefinition | null>(null);
+  const [showMilestoneToast, setShowMilestoneToast] = useState<boolean>(false);
+
+  // Auto-dismiss milestone toast after 4.5 seconds
+  useEffect(() => {
+    if (showMilestoneToast) {
+      const timer = setTimeout(() => {
+        setShowMilestoneToast(false);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [showMilestoneToast]);
 
   // Sync routine tab based on time on initial mount
   useEffect(() => {
@@ -248,6 +271,9 @@ export default function RoutineScreen() {
     const targetSteps = isAm ? amSteps : pmSteps;
     const setTargetSteps = isAm ? setAmSteps : setPmSteps;
 
+    const wasAllCompletedBefore =
+      targetSteps.length > 0 && targetSteps.every(s => s.completed);
+
     const updated = targetSteps.map(s => (s.id === id ? { ...s, completed: !s.completed } : s));
     setTargetSteps(updated);
 
@@ -279,6 +305,36 @@ export default function RoutineScreen() {
           await updateProduct(id, { lastCompletedDate: today }).catch(err => {
             console.warn('Failed to update mask lastCompletedDate:', err);
           });
+
+          // Check if completing this mask step unlocks mask_ritual milestone
+          const newlyMask = await recordMaskStepCompletion();
+          if (newlyMask.length > 0) {
+            setUnlockedMilestone(newlyMask[0]);
+            setShowMilestoneToast(true);
+          }
+        }
+      }
+
+      // Check if routine just reached 100% completion
+      const isAllCompletedNow = updated.length > 0 && updated.every(s => s.completed);
+      if (!wasAllCompletedBefore && isAllCompletedNow) {
+        const isAnyMaskInRoutine = updated.some(s => {
+          const prod = cabinetProducts.find(p => p.id === s.id);
+          return prod && isMaskProduct(prod);
+        });
+
+        const { newlyUnlocked } = await recordRoutineCompletion(
+          activeRoutine,
+          isAnyMaskInRoutine
+        );
+
+        const quote = getRandomAffirmation(activeRoutine, language);
+        setCurrentAffirmation(quote);
+        setIsAffirmationVisible(true);
+
+        if (newlyUnlocked.length > 0) {
+          setUnlockedMilestone(newlyUnlocked[0]);
+          setShowMilestoneToast(true);
         }
       }
     } catch (error) {
@@ -322,7 +378,9 @@ export default function RoutineScreen() {
 
   const handleCompleteRoutine = () => {
     if (completedCount === steps.length && steps.length > 0) {
-      navigation.navigate('Diary');
+      const quote = getRandomAffirmation(activeRoutine, language);
+      setCurrentAffirmation(quote);
+      setIsAffirmationVisible(true);
     }
   };
 
@@ -893,6 +951,169 @@ export default function RoutineScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ======================================================== */}
+      {/* Sleek Affirmation Modal (AM & PM Routine Completion)     */}
+      {/* ======================================================== */}
+      <Modal
+        visible={isAffirmationVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsAffirmationVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.affirmationCard,
+              {
+                backgroundColor: colors.card,
+                borderColor:
+                  activeRoutine === 'AM'
+                    ? isDark ? 'rgba(217, 130, 107, 0.4)' : 'rgba(217, 130, 107, 0.3)'
+                    : isDark ? 'rgba(134, 168, 146, 0.4)' : 'rgba(134, 168, 146, 0.3)',
+              },
+            ]}
+          >
+            {/* Top Icon Badge */}
+            <View
+              style={[
+                styles.affirmationIconCircle,
+                {
+                  backgroundColor:
+                    activeRoutine === 'AM'
+                      ? isDark ? '#3D251E' : '#FDF0EC'
+                      : isDark ? '#1E2D24' : '#EEF5F1',
+                },
+              ]}
+            >
+              <Text style={styles.affirmationIconEmoji}>
+                {activeRoutine === 'AM' ? '☀️' : '🌙'}
+              </Text>
+            </View>
+
+            <Text style={[styles.affirmationTitle, { color: colors.textPrimary }]}>
+              {t(activeRoutine === 'AM' ? 'morningAffirmationTitle' : 'eveningAffirmationTitle')}
+            </Text>
+
+            <Text
+              style={[
+                styles.affirmationEyebrow,
+                { color: activeRoutine === 'AM' ? colors.primary : colors.secondary },
+              ]}
+            >
+              {t('affirmationDailyQuote')}
+            </Text>
+
+            {/* Quote container */}
+            <View
+              style={[
+                styles.affirmationQuoteBox,
+                {
+                  backgroundColor: isDark ? '#1C1B19' : '#FAF8F5',
+                  borderColor: isDark ? '#2D2B28' : '#EFECE6',
+                },
+              ]}
+            >
+              <Text style={[styles.affirmationQuoteMark, { color: colors.primary }]}>“</Text>
+              <Text style={[styles.affirmationQuoteText, { color: colors.textPrimary }]}>
+                {currentAffirmation}
+              </Text>
+            </View>
+
+            {/* Unlocked Milestone Alert inside Modal if newly unlocked */}
+            {unlockedMilestone ? (
+              <View
+                style={[
+                  styles.affirmationMilestonePill,
+                  {
+                    backgroundColor: isDark ? '#2C2218' : '#FEF8F0',
+                    borderColor: isDark ? '#5C442D' : '#F6DFBF',
+                  },
+                ]}
+              >
+                <Text style={styles.affirmationMilestoneIcon}>{unlockedMilestone.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.affirmationMilestoneTitle,
+                      { color: isDark ? '#F5C78E' : '#92540F' },
+                    ]}
+                  >
+                    {t('milestoneUnlockedToast')}
+                  </Text>
+                  <Text
+                    style={[styles.affirmationMilestoneDesc, { color: colors.textSecondary }]}
+                  >
+                    {t(unlockedMilestone.titleKey as any)}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Actions */}
+            <TouchableOpacity
+              style={[
+                styles.affirmationPrimaryBtn,
+                { backgroundColor: activeRoutine === 'AM' ? colors.primary : colors.secondary },
+              ]}
+              onPress={() => setIsAffirmationVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.affirmationPrimaryBtnText}>✨ {t('affirmationDismiss')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.affirmationSecondaryBtn}
+              onPress={() => {
+                setIsAffirmationVisible(false);
+                navigation.navigate('Diary');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.affirmationSecondaryBtnText, { color: colors.textSecondary }]}>
+                {t('logSkinConditionCta')} →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ======================================================== */}
+      {/* Floating Celebratory Milestone Toast Banner             */}
+      {/* ======================================================== */}
+      {showMilestoneToast && unlockedMilestone && (
+        <View style={styles.toastContainer} pointerEvents="box-none">
+          <TouchableOpacity
+            style={[
+              styles.toastCard,
+              {
+                backgroundColor: isDark ? '#26201B' : '#FFFDF9',
+                borderColor: isDark ? 'rgba(217, 130, 107, 0.45)' : 'rgba(217, 130, 107, 0.35)',
+              },
+            ]}
+            onPress={() => setShowMilestoneToast(false)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.toastIconCircle}>
+              <Text style={styles.toastIconEmoji}>{unlockedMilestone.icon}</Text>
+            </View>
+            <View style={styles.toastTextCol}>
+              <Text style={[styles.toastTitle, { color: colors.primary }]}>
+                {t('milestoneUnlockedToast')}
+              </Text>
+              <Text style={[styles.toastSubtitle, { color: colors.textPrimary }]} numberOfLines={1}>
+                {t(unlockedMilestone.titleKey as any)}: {t(unlockedMilestone.descKey as any)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowMilestoneToast(false)}
+              style={styles.toastCloseBtn}
+            >
+              <Ionicons name="close" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1340,5 +1561,158 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  affirmationCard: {
+    width: '90%',
+    maxWidth: 380,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.xl,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  affirmationIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  affirmationIconEmoji: {
+    fontSize: 28,
+  },
+  affirmationTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  affirmationEyebrow: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: SPACING.md,
+  },
+  affirmationQuoteBox: {
+    width: '100%',
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING.md,
+    alignItems: 'center',
+  },
+  affirmationQuoteMark: {
+    fontSize: 32,
+    lineHeight: 32,
+    height: 24,
+    fontWeight: '700',
+    opacity: 0.6,
+  },
+  affirmationQuoteText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    paddingHorizontal: SPACING.xs,
+  },
+  affirmationMilestonePill: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: SPACING.md,
+    gap: 10,
+  },
+  affirmationMilestoneIcon: {
+    fontSize: 22,
+  },
+  affirmationMilestoneTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  affirmationMilestoneDesc: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  affirmationPrimaryBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  affirmationPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  affirmationSecondaryBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  affirmationSecondaryBtnText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 20,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    elevation: 10,
+  },
+  toastCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+    gap: 10,
+  },
+  toastIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(217, 130, 107, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastIconEmoji: {
+    fontSize: 20,
+  },
+  toastTextCol: {
+    flex: 1,
+  },
+  toastTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  toastSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  toastCloseBtn: {
+    padding: 4,
   },
 });
