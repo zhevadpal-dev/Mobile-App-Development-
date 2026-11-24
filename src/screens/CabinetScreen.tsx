@@ -36,24 +36,35 @@ import {
 } from '../services/productStorage';
 
 /**
- * Predefined catalog of premium skincare items for simulated AI Vision recognition
+ * Detected Product metadata from Vision AI analysis
  */
-const AI_SCANNED_PRODUCTS: Array<{
+export interface DetectedProductVisionData {
   name: string;
   brand: string;
   category: ProductCategory;
-}> = [
-  { name: 'Radiance Glow Serum', brand: 'Glow Recipe', category: 'serum' },
-  { name: 'Hydrating Gentle Cleanser', brand: 'CeraVe', category: 'cleanser' },
-  { name: 'Rose Petal Hydrating Toner', brand: 'Fresh', category: 'toner' },
-  { name: 'Barrier Restore Moisture Cream', brand: 'La Roche-Posay', category: 'moisturizer' },
-  { name: 'Anthelios UV Invisible Fluid SPF 50+', brand: 'La Roche-Posay', category: 'sunscreen' },
-  { name: '10% Niacinamide + Zinc Serum', brand: 'The Ordinary', category: 'serum' },
-  { name: 'BHA 2% Liquid Exfoliant', brand: "Paula's Choice", category: 'toner' },
-  { name: 'Centella Water-Fit Sun Serum SPF 50+', brand: 'Skin1004', category: 'sunscreen' },
-  { name: 'Overnight Firming Moisture Mask', brand: 'Laneige', category: 'masks_treatments' },
-  { name: 'Squalane + Amino Cleansing Oil', brand: 'Biossance', category: 'cleanser' },
-];
+  routineType?: RoutineType;
+}
+
+/**
+ * Modular Vision AI analysis helper.
+ * Simulates analyzing a captured image and returning recognized product properties.
+ * Structured cleanly so a real Vision API (e.g. Google Cloud Vision or Gemini 1.5 Flash Vision)
+ * can be plugged in directly without modifying UI screens or state management.
+ */
+export const analyzeProductImageWithVision = async (
+  _imageUri: string
+): Promise<DetectedProductVisionData> => {
+  // Realistic inference / network transition latency
+  await new Promise(resolve => setTimeout(resolve, 1200));
+
+  // Vision API hook: return clean initial detected properties for confirmation
+  return {
+    name: '',
+    brand: '',
+    category: 'serum',
+    routineType: 'both',
+  };
+};
 
 /**
  * Localized category label resolver
@@ -242,6 +253,7 @@ export default function CabinetScreen() {
     setManualName('');
     setManualBrand('');
     setManualCategory('cleanser');
+    setManualRoutine('both');
     setManualImageUri(null);
     setIsManualModalVisible(true);
   };
@@ -303,44 +315,42 @@ export default function CabinetScreen() {
   };
 
   /**
-   * Simulated AI Vision Analysis & Auto-Categorization
-   * Shows scanning overlay for ~2000ms, then auto-generates product data and saves to Cabinet.
+   * AI Vision Analysis transition:
+   * Displays smooth scanner overlay, calls modular vision analyzer,
+   * then opens the product confirmation & entry modal with the captured photo.
+   * Does NOT auto-save mock data into the cabinet.
    */
-  const runAiAnalysis = (imageUri: string) => {
+  const runAiAnalysis = async (imageUri: string) => {
     setScannedImageUri(imageUri);
     setIsAiScanning(true);
 
-    setTimeout(async () => {
-      try {
-        const randomIndex = Math.floor(Math.random() * AI_SCANNED_PRODUCTS.length);
-        const mockProduct = AI_SCANNED_PRODUCTS[randomIndex];
-        const meta = getCategoryMeta(mockProduct.category);
-        const autoRoutine: RoutineType =
-          mockProduct.category === 'sunscreen'
-            ? 'am'
-            : mockProduct.category === 'masks_treatments'
-            ? 'pm'
-            : 'both';
+    try {
+      const detected = await analyzeProductImageWithVision(imageUri);
 
-        await addProduct({
-          name: mockProduct.name,
-          brand: mockProduct.brand,
-          category: meta.key,
-          routineType: autoRoutine,
-          openedDate: getTodayFormatted(),
-          orderWeight: meta.orderWeight,
-          imageUri,
-        });
+      // Populate entry/confirmation modal with captured photo and detected metadata
+      setManualImageUri(imageUri);
+      setManualName(detected.name || '');
+      setManualBrand(detected.brand || '');
+      setManualCategory(detected.category || 'serum');
+      setManualRoutine(detected.routineType || 'both');
 
-        await loadProducts();
-      } catch (error) {
-        console.error('Error during AI auto-categorization:', error);
-        Alert.alert(t('saveFailed'), t('couldNotSaveProduct'));
-      } finally {
-        setIsAiScanning(false);
-        setScannedImageUri(null);
-      }
-    }, 2000);
+      // Dismiss scanning overlay and present confirmation modal
+      setIsAiScanning(false);
+      setScannedImageUri(null);
+      setIsManualModalVisible(true);
+    } catch (error) {
+      console.error('Error during AI analysis:', error);
+      setIsAiScanning(false);
+      setScannedImageUri(null);
+
+      // Graceful fallback: open entry modal with photo so user does not lose captured image
+      setManualImageUri(imageUri);
+      setManualName('');
+      setManualBrand('');
+      setManualCategory('serum');
+      setManualRoutine('both');
+      setIsManualModalVisible(true);
+    }
   };
 
   /**
@@ -987,7 +997,7 @@ export default function CabinetScreen() {
                   {t('newAddition')}
                 </Text>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                  {t('addManually')}
+                  {manualImageUri ? t('confirmProductDetails') : t('addManually')}
                 </Text>
               </View>
               <TouchableOpacity
