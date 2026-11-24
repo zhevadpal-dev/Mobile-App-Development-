@@ -62,6 +62,16 @@ export const PRIMARY_CATEGORIES: CategoryDefinition[] = [
 export type RoutineType = 'am' | 'pm' | 'both' | 'none';
 
 /**
+ * Mask categorization types
+ */
+export type MaskType = 'full_face' | 'under_eye' | 'clay_peel';
+
+/**
+ * Mask application frequency options
+ */
+export type MaskFrequency = 'every_3_days' | 'weekly' | 'every_2_weeks' | 'every_3_weeks';
+
+/**
  * Core Skincare Product Interface
  */
 export interface Product {
@@ -91,6 +101,18 @@ export interface Product {
   createdAt?: number;
   /** Record last update timestamp */
   updatedAt?: number;
+
+  // Mask Scheduling Properties
+  /** Mask categorization type */
+  maskType?: MaskType;
+  /** Mask application frequency */
+  frequency?: MaskFrequency;
+  /** Whether mask is restricted to weekends */
+  weekendsOnly?: boolean;
+  /** Explicit routine time preference for mask */
+  routineTime?: RoutineType;
+  /** Last completed date (YYYY-MM-DD) for interval tracking */
+  lastCompletedDate?: string;
 }
 
 /**

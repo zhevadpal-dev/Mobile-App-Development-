@@ -50,28 +50,88 @@ export interface RoutineStep {
 }
 
 /**
- * Determine if a product belongs to a routine (AM / PM)
+ * Check if a product is a mask
  */
-const isProductInRoutine = (p: Product, routine: 'AM' | 'PM'): boolean => {
-  if (p.routineType) {
-    if (p.routineType === 'none') return false;
-    if (routine === 'AM') {
-      return p.routineType === 'am' || p.routineType === 'both';
-    } else {
-      return p.routineType === 'pm' || p.routineType === 'both';
+export const isMaskProduct = (p: Product): boolean => {
+  const cat = (p.category || '').toLowerCase();
+  return cat.includes('mask') || cat.includes('treat') || !!p.maskType;
+};
+
+/**
+ * Filter mask products so they only appear in the active routine when actually due.
+ * Checks day of the week for weekendsOnly, and calculates day interval from lastCompletedDate or createdAt.
+ */
+export const isMaskDue = (
+  p: Product,
+  targetDate: Date = new Date(),
+  todayKey: string = getTodayKey()
+): boolean => {
+  if (!isMaskProduct(p)) return true;
+
+  // If already completed today, keep visible in today's routine steps as completed
+  if (p.lastCompletedDate === todayKey) {
+    return true;
+  }
+
+  // 1. Check weekend restriction
+  if (p.weekendsOnly) {
+    const day = targetDate.getDay();
+    const isWeekend = day === 0 || day === 6; // Sunday (0) or Saturday (6)
+    if (!isWeekend) {
+      return false;
     }
   }
 
-  // Default heuristic for legacy products without routineType
-  const cat = (p.category || '').toLowerCase();
-  if (routine === 'AM') {
-    if (cat.includes('sun') || cat.includes('spf')) return true;
-    if (cat.includes('mask') || cat.includes('treat')) return false;
-    return true;
-  } else {
-    if (cat.includes('sun') || cat.includes('spf')) return false;
-    return true;
+  // 2. Frequency day interval
+  const frequency = p.frequency || 'weekly';
+  let intervalDays = 7;
+  if (frequency === 'every_3_days') intervalDays = 3;
+  else if (frequency === 'weekly') intervalDays = 7;
+  else if (frequency === 'every_2_weeks') intervalDays = 14;
+  else if (frequency === 'every_3_weeks') intervalDays = 21;
+
+  // 3. Day interval calculation
+  if (p.lastCompletedDate) {
+    const lastDate = new Date(p.lastCompletedDate);
+    const targetMidnight = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const lastMidnight = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate()).getTime();
+    const elapsedDays = Math.round((targetMidnight - lastMidnight) / (1000 * 60 * 60 * 24));
+    return elapsedDays >= intervalDays;
   }
+
+  // If never completed before, it is due on first matching day preference
+  return true;
+};
+
+/**
+ * Determine if a product belongs to a routine (AM / PM)
+ */
+const isProductInRoutine = (
+  p: Product,
+  routine: 'AM' | 'PM',
+  targetDate: Date = new Date(),
+  todayKey: string = getTodayKey()
+): boolean => {
+  const routineTime = p.routineTime || p.routineType;
+  if (routineTime) {
+    if (routineTime === 'none') return false;
+    if (routine === 'AM' && routineTime !== 'am' && routineTime !== 'both') return false;
+    if (routine === 'PM' && routineTime !== 'pm' && routineTime !== 'both') return false;
+  } else {
+    // Default heuristic for legacy products without routineType
+    const cat = (p.category || '').toLowerCase();
+    if (routine === 'AM') {
+      if (cat.includes('sun') || cat.includes('spf')) return true;
+      if (cat.includes('mask') || cat.includes('treat')) return false;
+      return true;
+    } else {
+      if (cat.includes('sun') || cat.includes('spf')) return false;
+      return true;
+    }
+  }
+
+  // Check mask scheduling due check
+  return isMaskDue(p, targetDate, todayKey);
 };
 
 /**
@@ -210,6 +270,17 @@ export default function RoutineScreen() {
       }
 
       await AsyncStorage.setItem(ROUTINE_COMPLETION_STORAGE_KEY, JSON.stringify(completionMap));
+
+      // Update mask's lastCompletedDate if applicable
+      const toggled = updated.find(s => s.id === id);
+      if (toggled && toggled.completed) {
+        const prod = cabinetProducts.find(p => p.id === id);
+        if (prod && isMaskProduct(prod)) {
+          await updateProduct(id, { lastCompletedDate: today }).catch(err => {
+            console.warn('Failed to update mask lastCompletedDate:', err);
+          });
+        }
+      }
     } catch (error) {
       console.error('Error saving routine completion state:', error);
     }
@@ -370,7 +441,7 @@ export default function RoutineScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Quick "+ Add Step" action */}
+        {/* Quick "Edit Routine" action */}
         <View style={styles.sectionHeaderRow}>
           <TouchableOpacity
             style={[
@@ -383,9 +454,9 @@ export default function RoutineScreen() {
             onPress={() => setIsCabinetPickerVisible(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={14} color={colors.primary} />
+            <Ionicons name="pencil-outline" size={13} color={colors.primary} />
             <Text style={[styles.addStepHeaderText, { color: colors.primary }]}>
-              {t('addStepTitle')}
+              {t('editRoutineBtn')}
             </Text>
           </TouchableOpacity>
         </View>

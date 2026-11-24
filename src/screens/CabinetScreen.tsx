@@ -27,6 +27,8 @@ import {
   PRIMARY_CATEGORIES,
   CATEGORY_ORDER_WEIGHTS,
   RoutineType,
+  MaskType,
+  MaskFrequency,
 } from '../types/product';
 import {
   getProducts,
@@ -34,6 +36,88 @@ import {
   deleteProduct,
   updateProduct,
 } from '../services/productStorage';
+
+/**
+ * Mask Type definition with smart auto-filled recommended defaults
+ */
+export const MASK_TYPES: Array<{
+  key: MaskType;
+  labelKey: TranslationKey;
+  icon: string;
+  defaultFreq: MaskFrequency;
+  defaultWeekends: boolean;
+  defaultRoutine: RoutineType;
+}> = [
+  {
+    key: 'full_face',
+    labelKey: 'maskTypeFullFace',
+    icon: '🧖‍♀️',
+    defaultFreq: 'every_2_weeks',
+    defaultWeekends: true,
+    defaultRoutine: 'pm',
+  },
+  {
+    key: 'under_eye',
+    labelKey: 'maskTypeUnderEye',
+    icon: '👀',
+    defaultFreq: 'every_3_days',
+    defaultWeekends: false,
+    defaultRoutine: 'pm',
+  },
+  {
+    key: 'clay_peel',
+    labelKey: 'maskTypeClayPeel',
+    icon: '🧪',
+    defaultFreq: 'every_2_weeks',
+    defaultWeekends: false,
+    defaultRoutine: 'pm',
+  },
+];
+
+export const MASK_FREQUENCIES: Array<{
+  key: MaskFrequency;
+  labelKey: TranslationKey;
+}> = [
+  { key: 'every_3_days', labelKey: 'freqEvery3Days' },
+  { key: 'weekly', labelKey: 'freqWeekly' },
+  { key: 'every_2_weeks', labelKey: 'freqEvery2Weeks' },
+  { key: 'every_3_weeks', labelKey: 'freqEvery3Weeks' },
+];
+
+/**
+ * Check whether a category corresponds to a mask / intensive treatment
+ */
+export const isMaskCategory = (category: string): boolean => {
+  const clean = category.toLowerCase();
+  return (
+    clean === 'masks_treatments' ||
+    clean === 'mask' ||
+    clean.includes('mask') ||
+    clean.includes('treat')
+  );
+};
+
+/**
+ * Format a human-readable schedule summary for mask badges
+ */
+export const getMaskScheduleSummary = (
+  product: Product,
+  t: (k: TranslationKey) => string
+): string => {
+  const freqMap: Record<MaskFrequency, TranslationKey> = {
+    every_3_days: 'freqEvery3Days',
+    weekly: 'freqWeekly',
+    every_2_weeks: 'freqEvery2Weeks',
+    every_3_weeks: 'freqEvery3Weeks',
+  };
+  const freqLabel = product.frequency
+    ? t(freqMap[product.frequency] || 'freqEvery2Weeks')
+    : t('freqEvery2Weeks');
+  const dayLabel = product.weekendsOnly
+    ? t('maskWeekendBadge')
+    : t('maskAnyDayBadge');
+  return `${freqLabel} • ${dayLabel}`;
+};
 
 /**
  * Detected Product metadata from Vision AI analysis
@@ -174,6 +258,9 @@ export default function CabinetScreen() {
   const [manualCategory, setManualCategory] = useState<ProductCategory>('cleanser');
   const [manualRoutine, setManualRoutine] = useState<RoutineType>('both');
   const [manualImageUri, setManualImageUri] = useState<string | null>(null);
+  const [manualMaskType, setManualMaskType] = useState<MaskType>('full_face');
+  const [manualFrequency, setManualFrequency] = useState<MaskFrequency>('every_2_weeks');
+  const [manualWeekendsOnly, setManualWeekendsOnly] = useState<boolean>(true);
   const [isSubmittingManual, setIsSubmittingManual] = useState<boolean>(false);
 
   // Edit Product Modal State
@@ -183,8 +270,48 @@ export default function CabinetScreen() {
   const [editBrand, setEditBrand] = useState<string>('');
   const [editCategory, setEditCategory] = useState<ProductCategory>('cleanser');
   const [editRoutine, setEditRoutine] = useState<RoutineType>('both');
+  const [editMaskType, setEditMaskType] = useState<MaskType>('full_face');
+  const [editFrequency, setEditFrequency] = useState<MaskFrequency>('every_2_weeks');
+  const [editWeekendsOnly, setEditWeekendsOnly] = useState<boolean>(true);
   const [editImageUri, setEditImageUri] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
+
+  /**
+   * Auto-fill mask defaults based on mask type selection
+   */
+  const handleSelectManualMaskType = (type: MaskType) => {
+    setManualMaskType(type);
+    const def = MASK_TYPES.find(m => m.key === type);
+    if (def) {
+      setManualFrequency(def.defaultFreq);
+      setManualWeekendsOnly(def.defaultWeekends);
+      setManualRoutine(def.defaultRoutine);
+    }
+  };
+
+  const handleSelectManualCategory = (catKey: ProductCategory) => {
+    setManualCategory(catKey);
+    if (isMaskCategory(catKey)) {
+      handleSelectManualMaskType(manualMaskType || 'full_face');
+    }
+  };
+
+  const handleSelectEditMaskType = (type: MaskType) => {
+    setEditMaskType(type);
+    const def = MASK_TYPES.find(m => m.key === type);
+    if (def) {
+      setEditFrequency(def.defaultFreq);
+      setEditWeekendsOnly(def.defaultWeekends);
+      setEditRoutine(def.defaultRoutine);
+    }
+  };
+
+  const handleSelectEditCategory = (catKey: ProductCategory) => {
+    setEditCategory(catKey);
+    if (isMaskCategory(catKey)) {
+      handleSelectEditMaskType(editMaskType || 'full_face');
+    }
+  };
 
   /**
    * Fetch products from AsyncStorage and sort automatically (thinnest to thickest)
@@ -254,6 +381,9 @@ export default function CabinetScreen() {
     setManualBrand('');
     setManualCategory('cleanser');
     setManualRoutine('both');
+    setManualMaskType('full_face');
+    setManualFrequency('every_2_weeks');
+    setManualWeekendsOnly(true);
     setManualImageUri(null);
     setIsManualModalVisible(true);
   };
@@ -289,12 +419,17 @@ export default function CabinetScreen() {
     try {
       setIsSubmittingManual(true);
       const meta = getCategoryMeta(manualCategory);
+      const isMask = isMaskCategory(manualCategory);
 
       await addProduct({
         name: manualName.trim(),
         brand: manualBrand.trim() || undefined,
         category: meta.key,
         routineType: manualRoutine,
+        routineTime: manualRoutine,
+        maskType: isMask ? manualMaskType : undefined,
+        frequency: isMask ? manualFrequency : undefined,
+        weekendsOnly: isMask ? manualWeekendsOnly : undefined,
         openedDate: getTodayFormatted(),
         orderWeight: meta.orderWeight,
         imageUri: manualImageUri || undefined,
@@ -304,6 +439,9 @@ export default function CabinetScreen() {
       setManualName('');
       setManualBrand('');
       setManualRoutine('both');
+      setManualMaskType('full_face');
+      setManualFrequency('every_2_weeks');
+      setManualWeekendsOnly(true);
       setManualImageUri(null);
       await loadProducts();
     } catch (error) {
@@ -413,8 +551,11 @@ export default function CabinetScreen() {
     setEditName(product.name);
     setEditBrand(product.brand || '');
     setEditCategory(getCategoryMeta(product.category).key);
-    setEditRoutine(product.routineType || 'both');
+    setEditRoutine(product.routineType || product.routineTime || 'both');
     setEditImageUri(product.imageUri || null);
+    setEditMaskType(product.maskType || 'full_face');
+    setEditFrequency(product.frequency || 'every_2_weeks');
+    setEditWeekendsOnly(product.weekendsOnly !== undefined ? product.weekendsOnly : true);
     setIsEditModalVisible(true);
   };
 
@@ -450,12 +591,17 @@ export default function CabinetScreen() {
     try {
       setIsSubmittingEdit(true);
       const meta = getCategoryMeta(editCategory);
+      const isMask = isMaskCategory(editCategory);
 
       await updateProduct(editingProduct.id, {
         name: editName.trim(),
         brand: editBrand.trim() || undefined,
         category: meta.key,
         routineType: editRoutine,
+        routineTime: editRoutine,
+        maskType: isMask ? editMaskType : undefined,
+        frequency: isMask ? editFrequency : undefined,
+        weekendsOnly: isMask ? editWeekendsOnly : undefined,
         orderWeight: meta.orderWeight,
         imageUri: editImageUri || undefined,
       });
@@ -732,6 +878,28 @@ export default function CabinetScreen() {
                                 : product.routineType === 'pm'
                                 ? t('routinePmShort')
                                 : t('routineBothShort')}
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        {isMaskCategory(product.category) && product.frequency ? (
+                          <View
+                            style={[
+                              styles.categoryTag,
+                              {
+                                backgroundColor: isDark ? '#2B2533' : '#F4F0F7',
+                                borderColor: isDark ? '#3D344B' : '#E3DAEB',
+                                borderWidth: 1,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryTagText,
+                                { color: isDark ? '#B39DDB' : '#7E57C2' },
+                              ]}
+                            >
+                              📅 {getMaskScheduleSummary(product, t)}
                             </Text>
                           </View>
                         ) : null}
@@ -1130,7 +1298,7 @@ export default function CabinetScreen() {
                               : colors.border,
                           },
                         ]}
-                        onPress={() => setManualCategory(cat.key)}
+                        onPress={() => handleSelectManualCategory(cat.key)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.catOptionHeader}>
@@ -1177,6 +1345,183 @@ export default function CabinetScreen() {
                   })}
                 </View>
               </View>
+
+              {/* Conditional Mask Scheduling Section */}
+              {isMaskCategory(manualCategory) ? (
+                <View
+                  style={[
+                    styles.maskScheduleSection,
+                    {
+                      backgroundColor: isDark ? '#232028' : '#F7F5FA',
+                      borderColor: isDark ? '#35303D' : '#E6E0ED',
+                    },
+                  ]}
+                >
+                  <View style={styles.maskScheduleHeader}>
+                    <Text style={[styles.maskScheduleTitle, { color: colors.secondary }]}>
+                      ✨ {t('maskSchedule')}
+                    </Text>
+                    <Text style={[styles.maskScheduleSub, { color: colors.textSecondary }]}>
+                      {t('maskScheduleSub')}
+                    </Text>
+                  </View>
+
+                  {/* Mask Type Selector */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskType')}
+                    </Text>
+                    <View style={styles.maskTypeRow}>
+                      {MASK_TYPES.map(m => {
+                        const isSelected = manualMaskType === m.key;
+                        return (
+                          <TouchableOpacity
+                            key={m.key}
+                            style={[
+                              styles.maskTypeBtn,
+                              isSelected && [
+                                styles.maskTypeBtnActive,
+                                { backgroundColor: colors.secondary, borderColor: colors.secondary },
+                              ],
+                              !isSelected && {
+                                backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                                borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                              },
+                            ]}
+                            onPress={() => handleSelectManualMaskType(m.key)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.maskTypeIcon}>{m.icon}</Text>
+                            <Text
+                              style={[
+                                styles.maskTypeText,
+                                {
+                                  color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                                  fontWeight: isSelected ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {t(m.labelKey)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Frequency Override */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskFrequency')}
+                    </Text>
+                    <View style={styles.maskChipGrid}>
+                      {MASK_FREQUENCIES.map(f => {
+                        const isSelected = manualFrequency === f.key;
+                        return (
+                          <TouchableOpacity
+                            key={f.key}
+                            style={[
+                              styles.maskChipBtn,
+                              isSelected && {
+                                backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                                borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                              },
+                              !isSelected && {
+                                backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                                borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                              },
+                            ]}
+                            onPress={() => setManualFrequency(f.key)}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.maskChipText,
+                                {
+                                  color: isSelected
+                                    ? isDark ? '#D1C4E9' : '#5E35B1'
+                                    : colors.textSecondary,
+                                  fontWeight: isSelected ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {t(f.labelKey)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Day Preference Override */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskDayPreference')}
+                    </Text>
+                    <View style={styles.maskPreferenceRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.maskPrefBtn,
+                          !manualWeekendsOnly && {
+                            backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                            borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                          },
+                          manualWeekendsOnly && {
+                            backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                            borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                          },
+                        ]}
+                        onPress={() => setManualWeekendsOnly(false)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.maskPrefText,
+                            {
+                              color: !manualWeekendsOnly
+                                ? isDark ? '#D1C4E9' : '#5E35B1'
+                                : colors.textSecondary,
+                              fontWeight: !manualWeekendsOnly ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {t('dayAny')}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.maskPrefBtn,
+                          manualWeekendsOnly && {
+                            backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                            borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                          },
+                          !manualWeekendsOnly && {
+                            backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                            borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                          },
+                        ]}
+                        onPress={() => setManualWeekendsOnly(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.maskPrefText,
+                            {
+                              color: manualWeekendsOnly
+                                ? isDark ? '#D1C4E9' : '#5E35B1'
+                                : colors.textSecondary,
+                              fontWeight: manualWeekendsOnly ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {t('dayWeekendsOnly')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Routine Assignment Selector */}
               <View style={styles.inputGroup}>
@@ -1415,7 +1760,7 @@ export default function CabinetScreen() {
                               : colors.border,
                           },
                         ]}
-                        onPress={() => setEditCategory(cat.key)}
+                        onPress={() => handleSelectEditCategory(cat.key)}
                         activeOpacity={0.7}
                       >
                         <View style={styles.catOptionHeader}>
@@ -1462,6 +1807,183 @@ export default function CabinetScreen() {
                   })}
                 </View>
               </View>
+
+              {/* Conditional Mask Scheduling Section */}
+              {isMaskCategory(editCategory) ? (
+                <View
+                  style={[
+                    styles.maskScheduleSection,
+                    {
+                      backgroundColor: isDark ? '#232028' : '#F7F5FA',
+                      borderColor: isDark ? '#35303D' : '#E6E0ED',
+                    },
+                  ]}
+                >
+                  <View style={styles.maskScheduleHeader}>
+                    <Text style={[styles.maskScheduleTitle, { color: colors.secondary }]}>
+                      ✨ {t('maskSchedule')}
+                    </Text>
+                    <Text style={[styles.maskScheduleSub, { color: colors.textSecondary }]}>
+                      {t('maskScheduleSub')}
+                    </Text>
+                  </View>
+
+                  {/* Mask Type Selector */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskType')}
+                    </Text>
+                    <View style={styles.maskTypeRow}>
+                      {MASK_TYPES.map(m => {
+                        const isSelected = editMaskType === m.key;
+                        return (
+                          <TouchableOpacity
+                            key={m.key}
+                            style={[
+                              styles.maskTypeBtn,
+                              isSelected && [
+                                styles.maskTypeBtnActive,
+                                { backgroundColor: colors.secondary, borderColor: colors.secondary },
+                              ],
+                              !isSelected && {
+                                backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                                borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                              },
+                            ]}
+                            onPress={() => handleSelectEditMaskType(m.key)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.maskTypeIcon}>{m.icon}</Text>
+                            <Text
+                              style={[
+                                styles.maskTypeText,
+                                {
+                                  color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                                  fontWeight: isSelected ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {t(m.labelKey)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Frequency Override */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskFrequency')}
+                    </Text>
+                    <View style={styles.maskChipGrid}>
+                      {MASK_FREQUENCIES.map(f => {
+                        const isSelected = editFrequency === f.key;
+                        return (
+                          <TouchableOpacity
+                            key={f.key}
+                            style={[
+                              styles.maskChipBtn,
+                              isSelected && {
+                                backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                                borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                              },
+                              !isSelected && {
+                                backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                                borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                              },
+                            ]}
+                            onPress={() => setEditFrequency(f.key)}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.maskChipText,
+                                {
+                                  color: isSelected
+                                    ? isDark ? '#D1C4E9' : '#5E35B1'
+                                    : colors.textSecondary,
+                                  fontWeight: isSelected ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {t(f.labelKey)}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Day Preference Override */}
+                  <View style={styles.maskScheduleGroup}>
+                    <Text style={[styles.maskSubLabel, { color: colors.textPrimary }]}>
+                      {t('maskDayPreference')}
+                    </Text>
+                    <View style={styles.maskPreferenceRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.maskPrefBtn,
+                          !editWeekendsOnly && {
+                            backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                            borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                          },
+                          editWeekendsOnly && {
+                            backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                            borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                          },
+                        ]}
+                        onPress={() => setEditWeekendsOnly(false)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.maskPrefText,
+                            {
+                              color: !editWeekendsOnly
+                                ? isDark ? '#D1C4E9' : '#5E35B1'
+                                : colors.textSecondary,
+                              fontWeight: !editWeekendsOnly ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {t('dayAny')}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.maskPrefBtn,
+                          editWeekendsOnly && {
+                            backgroundColor: isDark ? '#382B48' : '#EDE7F6',
+                            borderColor: isDark ? '#7E57C2' : '#7E57C2',
+                          },
+                          !editWeekendsOnly && {
+                            backgroundColor: isDark ? '#2B2632' : '#FFFFFF',
+                            borderColor: isDark ? '#3D3647' : '#E2DCE8',
+                          },
+                        ]}
+                        onPress={() => setEditWeekendsOnly(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.maskPrefText,
+                            {
+                              color: editWeekendsOnly
+                                ? isDark ? '#D1C4E9' : '#5E35B1'
+                                : colors.textSecondary,
+                              fontWeight: editWeekendsOnly ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {t('dayWeekendsOnly')}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Routine Assignment Selector */}
               <View style={styles.inputGroup}>
@@ -2189,5 +2711,86 @@ const styles = StyleSheet.create({
   sheetCancelText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  /* Mask Scheduling Styles */
+  maskScheduleSection: {
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+    gap: 12,
+  },
+  maskScheduleHeader: {
+    marginBottom: 2,
+  },
+  maskScheduleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  maskScheduleSub: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  maskScheduleGroup: {
+    gap: 6,
+  },
+  maskSubLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  maskTypeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  maskTypeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  maskTypeBtnActive: {
+    elevation: 2,
+  },
+  maskTypeIcon: {
+    fontSize: 18,
+  },
+  maskTypeText: {
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  maskChipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  maskChipBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+  },
+  maskChipText: {
+    fontSize: 11,
+  },
+  maskPreferenceRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  maskPrefBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maskPrefText: {
+    fontSize: 11,
   },
 });
