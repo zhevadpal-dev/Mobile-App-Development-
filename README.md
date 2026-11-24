@@ -36,7 +36,6 @@
 - [Application Ordering Logic](#-application-ordering-logic)
 - [Technical Architecture & State Management](#-technical-architecture--state-management)
 - [Data Storage Schema (AsyncStorage)](#-data-storage-schema-asyncstorage)
-- [Upcoming Cloud Integration (Firebase Roadmap)](#-upcoming-cloud-integration-firebase-roadmap)
 - [Project Directory Structure](#-project-directory-structure)
 - [Getting Started & Local Development](#-getting-started--local-development)
 - [Academic Information & Credits](#-academic-information--credits)
@@ -100,7 +99,7 @@ A welcoming, distraction-free introductory experience for first-time users befor
 ### 2. 🧴 Advanced Digital Cabinet & Modular Camera Capture
 The central inventory hub for all skincare products, combining automated intelligence with manual control:
 - **Modular Camera-to-Cabinet Flow:** Streamlined photo capture that eliminates arbitrary mock auto-saves. Right after capturing a product photo, the app opens a clean **Product Entry & Confirmation Modal** displaying the captured photo preview, allowing the user to review or input the Product Name, Brand, Category, Routine allocation, and Mask schedules before saving.
-- **Vision API-Ready Architecture:** Designed with modular, decoupled helper functions so external AI endpoints (such as Google Cloud Vision API or custom OCR pipelines) can be seamlessly plugged in without rewriting UI or state management.
+- **Vision API-Ready Architecture:** Designed with modular, decoupled helper functions so external AI endpoints (such as on-device Vision/OCR pipelines) can be seamlessly plugged in without rewriting UI or state management.
 - **Manual Entry Fallback:** Clean modal with text inputs for product name, brand, category picker, and an optional image picker with an elegant category icon placeholder if no photo is taken.
 - **Safely Nested Delete Workflow:** Removed cluttered delete triggers from product cards, nesting the delete action safely inside the Edit Product modal with a confirmation alert to prevent accidental removals.
 - **Intelligent Sorting Hierarchy:** Arranges all saved cosmetics from **thinnest formulation to thickest occlusion** (Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks & Treatments).
@@ -244,7 +243,7 @@ flowchart LR
 - **TypeScript First:** Strict typings (`Product`, `SkinLog`, `UserProfile`, `MilestoneDefinition`, `TranslationKey`) prevent runtime defects and enforce key validity at compile time.
 - **Offline-First Resilience:** Zero reliance on remote servers for core functions; the entire user experience runs smoothly in airplane mode with sub-millisecond local reads.
 - **Reactive Localization & Theming:** Custom React Context hooks (`useTheme`, `useLanguage`) trigger instant component re-renders upon toggling themes or languages without reloading the app bundle.
-- **Modular Services:** All storage operations (`productStorage`, `diaryStorage`, `milestoneService`, `authStorage`) are decoupled into standalone service files for straightforward testability and future cloud migrations.
+- **Modular Services:** All storage operations (`productStorage`, `diaryStorage`, `milestoneService`, `authStorage`) are decoupled into standalone service files for straightforward testability, maintainability, and clean separation of concerns.
 
 ---
 
@@ -306,21 +305,6 @@ export interface UserProfile {
   avatarBgColor?: string;   // Pastel background tone
 }
 ```
-
----
-
-## ☁️ Upcoming Cloud Integration (Firebase Roadmap)
-
-While **Skin Diary** currently operates with full offline persistence via `AsyncStorage`, the technical architecture is specifically structured for a smooth migration to **Google Firebase** in the next phase:
-
-```
-[ Local AsyncStorage Layer ]  ──►  [ Cloud Firestore Sync ]  ──►  [ Multi-Device Experience ]
-```
-
-1. **Firebase Authentication:** Replace local mock auth with secure Firebase Auth (Email/Password, Google Sign-In, Apple ID).
-2. **Cloud Firestore:** Real-time two-way synchronization of the Digital Cabinet, Milestones, and Skin Logs across multiple iOS and Android devices.
-3. **Firebase Cloud Storage:** Cloud hosting for user profile photos and product thumbnails.
-4. **Cloud Functions & Push Notifications:** Automated morning and evening skincare ritual reminders tailored to the user's localized timezone.
 
 ---
 
