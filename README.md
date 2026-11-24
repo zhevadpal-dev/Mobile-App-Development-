@@ -23,16 +23,19 @@
 - [Design Philosophy & Luxury Visual Identity](#-design-philosophy--luxury-visual-identity)
 - [Feature Walkthrough](#-feature-walkthrough)
   - [1. 3-Step Swipeable Onboarding](#1--3-step-swipeable-onboarding)
-  - [2. Advanced Digital Cabinet (AI Scan & Manual Entry)](#2--advanced-digital-cabinet-ai-scan--manual-entry)
-  - [3. Time-Aware AM/PM Routine & Smart UV Widget](#3--time-aware-ampm-routine--smart-uv-widget)
-  - [4. Skin Diary & Dynamic Smart Tips](#4--skin-diary--dynamic-smart-tips)
-  - [5. Calendar History & Streak Gamification](#5--calendar-history--streak-gamification)
-  - [6. Enhanced Profile Management & Global Avatar System](#6--enhanced-profile-management--global-avatar-system)
-  - [7. Bilingual Localization (EN / TR)](#7--bilingual-localization-en--tr)
-  - [8. Refined UI/UX & Luxury Minimalist Aesthetics](#8--refined-uiux--luxury-minimalist-aesthetics)
+  - [2. Advanced Digital Cabinet & Modular Camera Capture](#2--advanced-digital-cabinet--modular-camera-capture)
+  - [3. Smart Mask Scheduling & Dynamic Due-Date Filtering](#3--smart-mask-scheduling--dynamic-due-date-filtering)
+  - [4. Time-Aware AM/PM Routine & High-Contrast Controls](#4--time-aware-ampm-routine--high-contrast-controls)
+  - [5. Daily Routine Affirmations & Mindful Ritual Closure](#5--daily-routine-affirmations--mindful-ritual-closure)
+  - [6. Habit Streaks & Unlockable Milestones Showcase](#6--habit-streaks--unlockable-milestones-showcase)
+  - [7. Skin Diary & Dynamic Smart Tips](#7--skin-diary--dynamic-smart-tips)
+  - [8. Calendar History & Reflection Archive](#8--calendar-history--reflection-archive)
+  - [9. Enhanced Profile Management & Global Avatar System](#9--enhanced-profile-management--global-avatar-system)
+  - [10. Bilingual Localization (EN / TR)](#10--bilingual-localization-en--tr)
+  - [11. Refined UI/UX & Dark Mode Aesthetics](#11--refined-uiux--dark-mode-aesthetics)
 - [Application Ordering Logic](#-application-ordering-logic)
 - [Technical Architecture & State Management](#-technical-architecture--state-management)
-- [Data Storage Schema](#-data-storage-schema-asyncstorage)
+- [Data Storage Schema (AsyncStorage)](#-data-storage-schema-asyncstorage)
 - [Upcoming Cloud Integration (Firebase Roadmap)](#-upcoming-cloud-integration-firebase-roadmap)
 - [Project Directory Structure](#-project-directory-structure)
 - [Getting Started & Local Development](#-getting-started--local-development)
@@ -48,9 +51,10 @@ In modern skincare, consumers frequently manage dozens of active ingredients (AH
 
 1. **Algorithmic Organization:** Automatically sorts every cosmetic in the user's cabinet from **thinnest viscosity to thickest occlusion**.
 2. **Context-Aware Routine Guidance:** Intelligently switches between dedicated **Morning (AM)** and **Evening (PM)** workflows based on the device's clock.
-3. **Frictionless Daily Logging:** Replaces tedious text journals with quick, intuitive **emoji check-ins** coupled with tailored, dermatologically backed **Smart Tips**.
-4. **Visual Consistency Tracking:** Motivates long-term skincare adherence with an interactive calendar strip featuring historical skin badges and habit streak counters.
-5. **Private & Local-First:** Protects personal wellness data through instantaneous, offline-ready local persistence.
+3. **Smart Treatment Scheduling:** Automatically filters intensive masks and treatments so they only appear when actually due, respecting dermatological frequency and weekend preferences.
+4. **Mindful Affirmations & Habit Streaks:** Celebrates daily routine completion with grounding affirmations and rewards long-term consistency with unlockable milestone badges.
+5. **Frictionless Daily Logging:** Replaces tedious text journals with quick, intuitive **emoji check-ins** coupled with tailored, dermatologically backed **Smart Tips**.
+6. **Private & Local-First:** Protects personal wellness data through instantaneous, offline-ready local persistence via `AsyncStorage`.
 
 ---
 
@@ -75,8 +79,9 @@ The visual language of **Skin Diary** draws inspiration from high-end apothecary
 - The app icon and splash screen feature a bespoke **3D shaded white lotus flower** resting on a warm sand gradient background.
 - Symbolizing purity, renewal, and mindful self-care, the lotus asset anchors both the **App Icon**, the **Native Splash Screen** (`resizeMode: "contain"`), and the **Hero Headers** of the authentication screens.
 
-### 3. Comprehensive Dark Theme Adaptation
-- Rather than a harsh pure black, the Dark Mode employs a rich obsidian palette (`#121212` background, `#1E1E1E` card surfaces).
+### 3. Elevated Dark Theme Adaptation
+- Rather than a harsh pure black, the Dark Mode employs a rich obsidian palette (`#121211` background, `#1C1B19` card surfaces) with subtle borders.
+- Active segmented controls highlight with elevated, tinted surfaces and delicate borders (terracotta-tinted for Morning, sage-tinted for Evening).
 - Text smoothly transitions to soft ivory (`#FAF8F5`) and warm light sand (`#EAE6E1`), preserving perfect contrast and luxury elegance in low-light environments.
 
 ---
@@ -92,26 +97,57 @@ A welcoming, distraction-free introductory experience for first-time users befor
   - **Step 3 (`sparkles-outline`):** *Skin Diary* — Introduces emoji logging and habit tracking.
 - **Interactive Controls:** Dynamic pagination pills (active dot expands into a terracotta/sage capsule), top-right **Skip** shortcut, and a prominent **Get Started →** button on the final slide.
 
-### 2. 🧴 Advanced Digital Cabinet (AI Scan & Manual Entry)
+### 2. 🧴 Advanced Digital Cabinet & Modular Camera Capture
 The central inventory hub for all skincare products, combining automated intelligence with manual control:
-- **Advanced Digital Cabinet:** A sleek product management system featuring simulated AI product scanning via camera, manual entry fallbacks, and full edit capabilities.
-- **Simulated AI Vision Auto-Categorization:** Taking a photo opens a sleek full-screen scanning overlay with animated corner brackets, a laser beam, and `'Yapay Zeka Analiz Ediyor...'` status. A 2000ms simulation processes the image, automatically predicting product name, brand, and category, and pairs it with the captured photo thumbnail in the cabinet grid.
-- **Minimalist Circular '+' Action Menu:** Replaced bulky buttons with an elegant circular icon-only trigger that opens a native Action Sheet (or styled bottom sheet) with `'Scan with AI (Camera)'`, `'Add Manually'`, and `'Cancel'`.
+- **Modular Camera-to-Cabinet Flow:** Streamlined photo capture that eliminates arbitrary mock auto-saves. Right after capturing a product photo, the app opens a clean **Product Entry & Confirmation Modal** displaying the captured photo preview, allowing the user to review or input the Product Name, Brand, Category, Routine allocation, and Mask schedules before saving.
+- **Vision API-Ready Architecture:** Designed with modular, decoupled helper functions so external AI endpoints (such as Google Cloud Vision API or custom OCR pipelines) can be seamlessly plugged in without rewriting UI or state management.
 - **Manual Entry Fallback:** Clean modal with text inputs for product name, brand, category picker, and an optional image picker with an elegant category icon placeholder if no photo is taken.
-- **Full Product Editing:** Subtle pencil icon (`pencil-outline`) on each product card allows users to update product names, modify categories, or replace/remove photos at any time.
-- **Intelligent Sorting Hierarchy:** Arranges all saved cosmetics from **thinnest formulation to thickest occlusion** (Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks/Oils).
-- **Period-After-Opening (PAO) Tracker:** Logs the exact date each product was opened (`Opened Date`) and formats it in a subtle badge (e.g., `Açılış: 4 Kas 2026`), assisting users in monitoring cosmetic shelf-life and active ingredient degradation.
+- **Safely Nested Delete Workflow:** Removed cluttered delete triggers from product cards, nesting the delete action safely inside the Edit Product modal with a confirmation alert to prevent accidental removals.
+- **Intelligent Sorting Hierarchy:** Arranges all saved cosmetics from **thinnest formulation to thickest occlusion** (Cleanser → Toner → Serum → Moisturizer → Sunscreen → Masks & Treatments).
+- **Clean Card Architecture:** Circular thumbnail displays without overlapping step numbers, and the **Period-After-Opening (PAO)** date sits cleanly under the brand name as subtle text (e.g., `Açılış: 4 Kas 2026`).
 - **Quick Category Filtering:** Horizontal filter pills (`All`, `Cleanser`, `Toner`, `Serum`, `Moisturizer`, `Sunscreen`, `Masks`) allow instant sorting and isolation of specific ritual steps.
 
-### 3. ☀️/🌙 Time-Aware AM/PM Routine & Smart UV Widget
-A dedicated ritual checklist guiding users through their morning and evening applications:
-- **Smart UV & Weather Widget:** A contextual, minimalist thermometer widget that appears exclusively during the Morning Routine to provide quick weather and sun protection insights (e.g., `24°C • UV 6 • Bugün güneş kremi şart!`).
-- **Interactive Sunscreen Recommendation Modal:** Tapping the compact morning widget opens an in-depth modal displaying real-time UV index classifications, SPF 30+/50+ guidelines, and photo-damage prevention tips.
-- **Contextual Morning-Only Rendering:** Automatically hides during the Evening Routine, leaving the space clean and distraction-free above the night-time ritual checklist.
-- **Automatic Time Detection:** Automatically defaults to the **Morning Routine (AM)** between 05:00 AM and 04:59 PM, and shifts to the **Evening Routine (PM)** from 05:00 PM onwards.
-- **Tactile Interaction & Gate:** Smooth checkbox toggles with subtle strikethrough feedback. The completion CTA routes users directly into the Skin Diary upon finishing all steps.
+### 3. 🧖‍♀️ Smart Mask Scheduling & Dynamic Due-Date Filtering
+Intensive masks and treatments (sheet masks, clay peels, eye patches) should not be applied daily. **Skin Diary** introduces an intelligent scheduling engine:
+- **Conditional Mask Configuration:** Selecting "Masks & Treatments" dynamically reveals a clean **Mask Schedule** configuration panel inside the product entry and edit modals.
+- **Specialized Mask Types & Smart Auto-Filled Defaults:**
+  - **Full Face / Sheet Mask (`🧖‍♀️ Tam Yüz Maskesi`):** Defaults to *Every 2 weeks*, *Weekends only*, *Evening*.
+  - **Under-Eye Mask (`👀 Göz Altı Maskesi`):** Defaults to *Every 3 days*, *Any day*, *Evening*.
+  - **Clay / Peel-Off Mask (`🧪 Kil / Soyulan Maske`):** Defaults to *Every 2 weeks*, *Any day*, *Evening*.
+- **Full User Customization:** Users retain complete freedom to override frequency (*Every 3 days*, *Weekly*, *Every 2 weeks*, *Every 3 weeks*), day preference (*Any day*, *Weekends only*), and routine timing (*AM*, *PM*, *Both*).
+- **Dynamic Due-Date Routine Filtering:** Masks do not clutter daily checklists unnecessarily; they are algorithmically filtered on the Routine Screen so they only appear when actually due (based on days elapsed since `lastCompletedDate` and day-of-week criteria).
 
-### 4. ✨ Skin Diary & Dynamic Smart Tips
+### 4. ☀️/🌙 Time-Aware AM/PM Routine & High-Contrast Controls
+A dedicated ritual checklist guiding users through their morning and evening applications:
+- **High-Contrast Dark Mode Segmented Control:** Redesigned segmented routine switch with a recessed dark track (`#121211`), elevated pill tabs with crisp accent borders—warm terracotta (`rgba(217, 130, 107, 0.45)`) for Morning and calming sage (`rgba(134, 168, 146, 0.45)`) for Evening—guaranteeing immediate visual hierarchy in low light.
+- **Automatic Time Detection:** Defaults to the **Morning Routine (AM)** between 05:00 AM and 04:59 PM, and shifts to the **Evening Routine (PM)** from 05:00 PM onwards.
+- **Smart UV & Sun Protection Widget:** Minimalist contextual widget appearing exclusively during the Morning Routine with real-time UV index classifications, SPF 30+/50+ guidelines, and photo-damage prevention tips.
+- **Clean Steps Header:** Streamlined steps list by removing redundant titles and counts, keeping the right-aligned `Rutini Düzenle` (`Edit Routine`) action button clean, balanced, and minimal.
+- **Dynamic Cabinet Sync:** Products saved in the Digital Cabinet dynamically appear as checkable routine items in accordance with their assigned routine time.
+
+### 5. ✨ Daily Routine Affirmations & Mindful Ritual Closure
+Mindful skincare is an act of grounding self-care. Reaching 100% routine completion triggers a soothing affirmation experience:
+- **Curated Skincare Affirmations:** Two distinct pools of sweet, grounding affirmations localized in English and Turkish:
+  - **Morning Pool (Energizing & Fresh):** *"Your skin is prepped and glowing—have a radiant day!"*, *"A gentle morning ritual sets the tone for everything ahead."*, *"Protected, hydrated, and ready to shine."*
+  - **Evening Pool (Calming & Restorative):** *"You washed the day away. Rest well and let your skin repair."*, *"Consistency is the purest form of self-love. Sweet dreams!"*, *"Your evening ritual is complete—time to unwind."*
+- **Sleek Centered Modal:** Displays a centered luxury card with delicate quotation marks, ambient icon badge, the randomized affirmation quote, and a *"Glow On"* dismiss button or direct link to log skin condition.
+- **Once-Per-Day Trigger Logic:** Persists `lastAffirmationDate` for Morning and Evening in `AsyncStorage`. Only triggers the first time the user reaches 100% completion for that routine on a given day, ensuring accidental unchecking and rechecking never spams pop-ups.
+
+### 6. 🏆 Habit Streaks & Unlockable Milestones Showcase
+Motivates consistent skincare habits through local streak computation and one-time milestone unlocks:
+- **Consecutive Daily Streak Engine:** Analyzes completed routine dates in `AsyncStorage` to compute consecutive active streaks and best streaks, resilient against timezone shifts.
+- **6 One-Time Unlockable Achievements:**
+  - 🌱 **First Ritual (`İlk Ritüel`):** Completed very first skincare routine.
+  - ✨ **3-Day Glow (`3 Günlük Işıltı`):** 3 consecutive days of mindful skincare rituals.
+  - 🌿 **7-Day Devotion (`7 Günlük Bağlılık`):** Full week of consistent self-care.
+  - 👑 **Glow Master (`Işıltı Ustası`):** 14 consecutive days of dedicated skincare practice.
+  - 🧴 **Curated Shelf (`Küratör Dolap`):** Added 5 or more products to the Digital Cabinet.
+  - 🧖‍♀️ **Self-Care Mask (`Maske Ritüeli`):** Completed a scheduled pampering mask step.
+- **Strict One-Time Unlock Guarantee:** Verifies that a milestone ID does not already exist in `unlockedMilestones` before unlocking, ensuring badges and celebratory toasts trigger strictly once.
+- **Celebratory Toast Banners:** Floating celebratory toast banners with terracotta accent borders and celebratory icons appear in real-time when unlocking milestones.
+- **Profile Screen Showcase:** Centered 2-column luxury grid on Profile (`SettingsScreen.tsx`) highlighting current/longest streaks, unlocked dates, and locked hints.
+
+### 7. 💧 Skin Diary & Dynamic Smart Tips
 Enables users to evaluate daily skincare efficacy and log skin barrier status in seconds:
 - **5 Distinct Emoji Reflection States:**
   - ✨ **Glowing (`Işıltılı`):** Radiant, calm barrier.
@@ -123,16 +159,17 @@ Enables users to evaluate daily skincare efficacy and log skin barrier status in
   - *Dermatological Diagnosis Title* (e.g., *Barrier Recovery Mode*, *Deep Hydration Rescue*).
   - *Scientific Explanation* (e.g., lipid deficiencies, water loss, sun protection).
   - *Immediate Action Step* (e.g., layer ceramide cream, avoid harsh exfoliants).
+- **Decluttered Header:** Simplified subtitle to concise *"Cilt bakım rutini"* / *"Skincare routine"* and removed redundant placeholder helper boxes below the calendar strip.
 - **Journaling Note Field:** Optional open text input for capturing external variables (e.g., new cosmetic trial, hormonal cycle, climate).
 
-### 5. 📅 Calendar History & Streak Gamification
+### 8. 📅 Calendar History & Reflection Archive
 Visualizing historical skincare data to reinforce daily consistency:
 - **Current-Date Centered Strip:** A horizontal calendar strip that automatically highlights and centers on today's date.
 - **Saved Mini-Emoji Badges:** Displays the exact logged condition emoji as a discreet icon directly below historical dates.
 - **Interactive Archive Inspection:** Tapping any past date with an indicator opens a card revealing the historical condition, journal note, and specific Smart Tip issued on that day.
 - **Record Management:** Full chronological history feed with individual entry deletion capabilities.
 
-### 6. 👤 Enhanced Profile Management & Global Avatar System
+### 9. 👤 Enhanced Profile Management & Global Avatar System
 A comprehensive authentication, identity, and customization studio:
 - **Global Avatar System:** A unified customization modal allowing users to select cute animal avatars (🧸, 🐱, 🐼, 🐰, 🐶, 🦊) and pastel background colors (sage, cream, soft pink, lavender, peach), perfectly synced across the Home and Profile screens via global storage.
 - **Enhanced Profile Management:** Native camera and gallery integration (`expo-image-picker`) for uploading real profile photos, integrated with a clean action menu (Take a Photo, Choose from Gallery, Choose Cute Avatar, Cancel).
@@ -141,16 +178,17 @@ A comprehensive authentication, identity, and customization studio:
 - **Minimalist Auth Screens:** Elegant `LoginScreen` and `SignUpScreen` with the 3D lotus emblem, smooth password reveal/hide toggles, validation banners, and a single-tap **Quick Demo Sign-In (Zeynep)** for seamless testing.
 - **Editable Profile Name:** Real-time dirty-state tracking with an `Unsaved` badge and save button.
 
-### 7. 🌐 Bilingual Localization (EN / TR)
+### 10. 🌐 Bilingual Localization (EN / TR)
 Full internationalization supporting global and domestic users:
 - **Instant Language Toggle:** Easily switch between 🇬🇧 **English** and 🇹🇷 **Turkish** inside the Settings menu.
-- **Comprehensive String Coverage:** Over 200 localized keys covering all buttons, placeholders, validation alerts, calendar months, days of the week, and dermatological tips.
+- **Comprehensive String Coverage:** Over 220 localized keys covering all buttons, placeholders, validation alerts, calendar months, days of the week, dermatological tips, routine affirmations, and milestone achievements.
 - **Strict Brand Rule Enforcement:** The trademark brand name **`Skin Diary`** is strictly preserved in its original form across all locales and headers.
 
-### 8. 🎨 Refined UI/UX & Luxury Minimalist Aesthetics
-- **Refined UI/UX:** Minimalist typography updates and decluttered interfaces to maintain the app's premium, luxury aesthetic.
-- **Softer Typography & Direct Messaging:** Softened greeting typography on the home header and streamlined welcome copy (`Skin Diary'ye Hoş Geldin` / `Welcome to Skin Diary`) for a more direct, elegant feel.
-- **Minimalist Controls & Balanced Spacing:** Replaced bulky buttons with sleek circular vector triggers (`+` button), subtle pencil edit icons on product cards, and balanced negative space tailored for an uncluttered ritual experience.
+### 11. 🎨 Refined UI/UX & Dark Mode Aesthetics
+- **High-Contrast Dark Mode Segmented Controls:** Deep recessed track (`#121211`) with clear terracotta/sage borders on active routine tabs.
+- **Decluttered Headers:** Simplified DiaryScreen subtitle and streamlined RoutineScreen action button (`Rutini Düzenle`).
+- **Clean Card Architecture:** Circular icon container without cluttering step numbers, subtle PAO opening date text, and safely nested delete actions with confirmation alerts.
+- **Centered Modals:** Affirmation card sits centered (`width: '100%', maxWidth: 360, alignSelf: 'center'`) on all screen dimensions with an elegant dimmed backdrop.
 
 ---
 
@@ -164,7 +202,7 @@ flowchart LR
     B --> C["#3 Serum<br/>(Active Fluid)"]
     C --> D["#4 Moisturizer<br/>(Barrier Emulsion)"]
     D --> E["#5 Sunscreen<br/>(AM Shield)"]
-    D --> F["#6 Treatments / Oils<br/>(PM Occlusive)"]
+    D --> F["#6 Masks & Treatments<br/>(Scheduled PM)"]
 ```
 
 | Step Order | Category | Typical Consistency | Primary Routine | Function in Regimen |
@@ -174,8 +212,7 @@ flowchart LR
 | **#3** | **Serum** | Fluid / Active Concentrate | AM & PM | Targeted delivery of concentrated actives (Niacinamide, HA, Vitamin C). |
 | **#4** | **Moisturizer** | Emulsion / Barrier Cream | AM & PM | Lipids and ceramides that lock in moisture and reinforce stratum corneum. |
 | **#5** | **Sunscreen** | Fluid / Chemical / Mineral | **AM Only** | Broad-spectrum UV defense; mandatory final step in every morning ritual. |
-| **#6** | **Masks & Treatments** | Intensive Gel / Sheet / Balm | PM (1–3x weekly) | Deep hydration, exfoliation (AHA/BHA), or overnight recovery. |
-| **#7** | **Facial Oil** | 100% Lipid / Squalane | PM Only | Occlusive seal preventing transepidermal water loss (TEWL) during sleep. |
+| **#6** | **Masks & Treatments** | Sheet / Clay / Eye Patches | **Scheduled (PM)** | Targeted recovery; dynamically scheduled every 3 days, weekly, or biweekly. |
 
 ---
 
@@ -195,17 +232,19 @@ flowchart LR
 │  └── AuthContext     : Session token & Profile State   │
 ├────────────────────────────────────────────────────────┤
 │  Local Persistence Services (AsyncStorage)             │
-│  ├── @skin_diary_products : Viscosity-sorted inventory │
-│  ├── @skin_diary_logs     : Date-indexed skin entries  │
-│  └── @skin_diary_user     : Authenticated profile info │
+│  ├── @skin_diary_products   : Viscosity-sorted cabinet │
+│  ├── @skin_diary_logs       : Date-indexed skin logs   │
+│  ├── @skin_diary_milestones : Streaks & badge unlocks  │
+│  ├── @skin_diary_completion : Daily routine checklists │
+│  └── @skin_diary_auth_user  : Authenticated profile    │
 └────────────────────────────────────────────────────────┘
 ```
 
 ### Architectural Decisions
-- **TypeScript First:** Strict typings (`Product`, `SkinLog`, `UserProfile`, `TranslationKey`) prevent runtime defects and enforce dictionary key validity at compile time.
+- **TypeScript First:** Strict typings (`Product`, `SkinLog`, `UserProfile`, `MilestoneDefinition`, `TranslationKey`) prevent runtime defects and enforce key validity at compile time.
 - **Offline-First Resilience:** Zero reliance on remote servers for core functions; the entire user experience runs smoothly in airplane mode with sub-millisecond local reads.
 - **Reactive Localization & Theming:** Custom React Context hooks (`useTheme`, `useLanguage`) trigger instant component re-renders upon toggling themes or languages without reloading the app bundle.
-- **Modular Services:** All storage operations (`getProducts`, `addProduct`, `deleteProduct`, `getLogs`, `saveLog`) are decoupled into standalone service files for straightforward testability and future cloud migrations.
+- **Modular Services:** All storage operations (`productStorage`, `diaryStorage`, `milestoneService`, `authStorage`) are decoupled into standalone service files for straightforward testability and future cloud migrations.
 
 ---
 
@@ -219,10 +258,29 @@ export interface Product {
   id: string;               // Unique UUID v4
   name: string;             // e.g., "10% Niacinamide Serum"
   brand?: string;           // e.g., "The Ordinary"
-  category: ProductCategory;// 'cleanser' | 'toner' | 'serum' | 'moisturizer' | 'sunscreen' | 'masks_treatments' | 'facial_oil'
+  category: ProductCategory;// 'cleanser' | 'toner' | 'serum' | 'moisturizer' | 'sunscreen' | 'masks_treatments'
+  routineType?: RoutineType;// 'am' | 'pm' | 'both' | 'none'
+  routineTime?: RoutineType;
   openedDate: string;       // ISO Date: 'YYYY-MM-DD'
-  orderWeight: number;      // Dermatological hierarchy weight (1 to 7)
+  orderWeight: number;      // Dermatological hierarchy weight (1 to 6)
   imageUri?: string;        // Local photo URI from AI camera scan or gallery upload
+  maskType?: MaskType;      // 'full_face' | 'under_eye' | 'clay_peel'
+  frequency?: MaskFrequency;// 'every_3_days' | 'weekly' | 'every_2_weeks' | 'every_3_weeks'
+  weekendsOnly?: boolean;   // Day preference filter for masks
+  lastCompletedDate?: string;// Last completion date for mask interval calculation
+}
+
+// Key: '@skin_diary_milestones_data_v1'
+export interface UserMilestonesData {
+  completedDates: string[]; // ['2026-11-24', ...]
+  currentStreak: number;    // Consecutive active days
+  longestStreak: number;    // All-time best streak
+  unlockedMilestones: Record<string, string>; // milestoneId -> unlockedAt ISO string
+  lastRoutineCompletedAt?: string;
+  lastAffirmationDate?: {
+    morning?: string;       // 'YYYY-MM-DD'
+    evening?: string;       // 'YYYY-MM-DD'
+  };
 }
 
 // Key: '@skin_diary_skin_logs'
@@ -243,8 +301,9 @@ export interface UserProfile {
   id: string;               // User identifier
   name: string;             // Display name
   email: string;            // User email
-  photoUri?: string;        // Local file URI or 'avatar:🧸'
-  avatarBgColor?: string;   // Pastel background tone for avatar preview
+  photoUri?: string;        // Local file URI or undefined
+  avatarEmoji?: string;     // Cute emoji avatar (🧸, 🐱, etc.)
+  avatarBgColor?: string;   // Pastel background tone
 }
 ```
 
@@ -258,9 +317,9 @@ While **Skin Diary** currently operates with full offline persistence via `Async
 [ Local AsyncStorage Layer ]  ──►  [ Cloud Firestore Sync ]  ──►  [ Multi-Device Experience ]
 ```
 
-1. **Firebase Authentication:** Replace mock storage auth with secure Firebase Auth (Email/Password, Google Sign-In, Apple ID).
-2. **Cloud Firestore:** Real-time two-way synchronization of the Digital Cabinet and Skin Logs across multiple iOS and Android devices.
-3. **Firebase Cloud Storage:** Cloud hosting for user profile photos uploaded via the camera and media library.
+1. **Firebase Authentication:** Replace local mock auth with secure Firebase Auth (Email/Password, Google Sign-In, Apple ID).
+2. **Cloud Firestore:** Real-time two-way synchronization of the Digital Cabinet, Milestones, and Skin Logs across multiple iOS and Android devices.
+3. **Firebase Cloud Storage:** Cloud hosting for user profile photos and product thumbnails.
 4. **Cloud Functions & Push Notifications:** Automated morning and evening skincare ritual reminders tailored to the user's localized timezone.
 
 ---
@@ -279,34 +338,37 @@ Mobile-App-Development/
 │   └── favicon.png              # Web favicon
 └── src/
     ├── components/              # Shared UI components
-    │   ├── AvatarPickerModal.tsx# Unified cute avatar & pastel color picker modal
-    │   └── ThemeToggle.tsx      # Reusable minimalist Dark/Light mode toggle button
+    │   └── AvatarPickerModal.tsx# Unified cute avatar & pastel color picker modal
     ├── constants/               # Design tokens & translations
     │   ├── theme.ts             # Palette (cream, sand, terracotta, sage), typography, spacing
-    │   └── translations.ts      # EN & TR translation dictionaries (200+ keys)
+    │   └── translations.ts      # EN & TR translation dictionaries (220+ keys)
     ├── context/                 # Application state providers
     │   ├── AuthContext.tsx      # User authentication & profile persistence
     │   ├── LanguageContext.tsx  # Reactive bilingual locale switcher
     │   └── ThemeContext.tsx     # Light/Dark mode state management
     ├── navigation/              # React Navigation hierarchies
     │   ├── AuthNavigator.tsx    # Stack: Onboarding → Login → SignUp
-    │   ├── MainNavigator.tsx    # Stack modal wrapper: MainTabs ╪ Settings
-    │   └── TabNavigator.tsx     # Bottom Tabs: Routine | Cabinet | Diary
+    │   └── TabNavigator.tsx     # Bottom Tabs: Home | Routine | Diary | Cabinet | Profile
     ├── screens/                 # Core application views
     │   ├── OnboardingScreen.tsx # 3-step swipable introduction with Ionicons badges
     │   ├── LoginScreen.tsx      # Luxury sign-in with lotus hero & demo fill
     │   ├── SignUpScreen.tsx     # Account registration view
     │   ├── HomeScreen.tsx       # Morning greeting, ritual CTA & quick shortcuts
-    │   ├── RoutineScreen.tsx    # AM/PM checklist & contextual morning UV widget
-    │   ├── CabinetScreen.tsx    # AI product scan, manual entry & PAO tracker
+    │   ├── RoutineScreen.tsx    # AM/PM checklist, UV widget & Affirmation modal
+    │   ├── CabinetScreen.tsx    # AI product scan, mask scheduler & PAO tracker
     │   ├── DiaryScreen.tsx      # Emoji check-in, Smart Tips & calendar history
-    │   └── SettingsScreen.tsx   # Avatar picker studio, action menu & language switch
+    │   └── SettingsScreen.tsx   # Profile studio, Milestones grid & language switch
     ├── services/                # Local data storage abstraction
     │   ├── productStorage.ts    # AsyncStorage CRUD for skincare products
-    │   └── skinLogStorage.ts    # AsyncStorage CRUD for daily diary logs
+    │   ├── diaryStorage.ts      # AsyncStorage CRUD for daily diary logs
+    │   ├── milestoneService.ts  # Streak computation, milestone unlocks & affirmations
+    │   └── authStorage.ts       # Local authentication & profile persistence
     └── types/                   # TypeScript interfaces & definitions
-        ├── navigation.ts        # Param lists for Auth, Main, and Tab stacks
-        └── product.ts           # Product, category, and skin log interfaces
+        ├── navigation.ts        # Param lists for Auth and Tab stacks
+        ├── product.ts           # Product, category, mask schedule & routine types
+        ├── diary.ts             # Skin log, condition and smart tip interfaces
+        ├── milestone.ts         # Milestone definitions, streaks & affirmations
+        └── auth.ts              # User profile and credentials interfaces
 ```
 
 ---
