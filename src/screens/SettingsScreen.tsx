@@ -1285,10 +1285,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    alignItems: 'stretch',
   },
   milestoneCard: {
-    width: '48.5%',
+    width: '48%',
     borderRadius: RADIUS.md,
     borderWidth: 1,
     padding: 12,

@@ -22,6 +22,10 @@ export interface UserMilestonesData {
   longestStreak: number;
   unlockedMilestones: Record<string, string>; // milestoneId -> unlockedAt (ISO string or YYYY-MM-DD)
   lastRoutineCompletedAt?: string;
+  lastAffirmationDate?: {
+    morning?: string;
+    evening?: string;
+  };
 }
 
 export interface Affirmation {

@@ -25,6 +25,8 @@ import {
   recordRoutineCompletion,
   recordMaskStepCompletion,
   getRandomAffirmation,
+  canShowAffirmationToday,
+  recordAffirmationShownToday,
 } from '../services/milestoneService';
 import { MilestoneDefinition } from '../types/milestone';
 
@@ -323,18 +325,24 @@ export default function RoutineScreen() {
           return prod && isMaskProduct(prod);
         });
 
-        const { newlyUnlocked } = await recordRoutineCompletion(
+        const { newlyUnlocked, shouldShowAffirmation } = await recordRoutineCompletion(
           activeRoutine,
           isAnyMaskInRoutine
         );
 
-        const quote = getRandomAffirmation(activeRoutine, language);
-        setCurrentAffirmation(quote);
-        setIsAffirmationVisible(true);
-
+        // Strict one-time milestone display: only show if truly newly unlocked
         if (newlyUnlocked.length > 0) {
           setUnlockedMilestone(newlyUnlocked[0]);
           setShowMilestoneToast(true);
+        } else {
+          setUnlockedMilestone(null);
+        }
+
+        // Once-per-day affirmation trigger: only show first time 100% is reached today
+        if (shouldShowAffirmation) {
+          const quote = getRandomAffirmation(activeRoutine, language);
+          setCurrentAffirmation(quote);
+          setIsAffirmationVisible(true);
         }
       }
     } catch (error) {
@@ -376,11 +384,18 @@ export default function RoutineScreen() {
 
   const completedCount = steps.filter(s => s.completed).length;
 
-  const handleCompleteRoutine = () => {
+  const handleCompleteRoutine = async () => {
     if (completedCount === steps.length && steps.length > 0) {
-      const quote = getRandomAffirmation(activeRoutine, language);
-      setCurrentAffirmation(quote);
-      setIsAffirmationVisible(true);
+      const canShow = await canShowAffirmationToday(activeRoutine);
+      if (canShow) {
+        await recordAffirmationShownToday(activeRoutine);
+        setUnlockedMilestone(null);
+        const quote = getRandomAffirmation(activeRoutine, language);
+        setCurrentAffirmation(quote);
+        setIsAffirmationVisible(true);
+      } else {
+        navigation.navigate('Diary');
+      }
     }
   };
 
@@ -961,7 +976,7 @@ export default function RoutineScreen() {
         animationType="fade"
         onRequestClose={() => setIsAffirmationVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.affirmationModalOverlay}>
           <View
             style={[
               styles.affirmationCard,
@@ -1562,9 +1577,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  affirmationModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
   affirmationCard: {
-    width: '90%',
-    maxWidth: 380,
+    width: '100%',
+    maxWidth: 360,
+    alignSelf: 'center',
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
     borderWidth: 1.5,

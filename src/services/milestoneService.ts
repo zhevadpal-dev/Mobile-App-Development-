@@ -199,6 +199,7 @@ export const getMilestonesData = async (): Promise<UserMilestonesData> => {
         currentStreak: 0,
         longestStreak: 0,
         unlockedMilestones: {},
+        lastAffirmationDate: {},
       };
     }
     const data: UserMilestonesData = JSON.parse(raw);
@@ -209,6 +210,7 @@ export const getMilestonesData = async (): Promise<UserMilestonesData> => {
       longestStreak: Math.max(longestStreak, data.longestStreak || 0),
       unlockedMilestones: data.unlockedMilestones || {},
       lastRoutineCompletedAt: data.lastRoutineCompletedAt,
+      lastAffirmationDate: data.lastAffirmationDate || {},
     };
   } catch (error) {
     console.error('Failed to read milestones data:', error);
@@ -217,6 +219,7 @@ export const getMilestonesData = async (): Promise<UserMilestonesData> => {
       currentStreak: 0,
       longestStreak: 0,
       unlockedMilestones: {},
+      lastAffirmationDate: {},
     };
   }
 };
@@ -230,6 +233,38 @@ export const saveMilestonesData = async (data: UserMilestonesData): Promise<void
   } catch (error) {
     console.error('Failed to save milestones data:', error);
   }
+};
+
+/**
+ * Check whether affirmation modal can be shown today for the given routine
+ */
+export const canShowAffirmationToday = async (
+  routineType: 'AM' | 'PM',
+  todayKey: string = getTodayKey()
+): Promise<boolean> => {
+  const data = await getMilestonesData();
+  const routineKey = routineType === 'AM' ? 'morning' : 'evening';
+  const lastDate = data.lastAffirmationDate?.[routineKey];
+  return lastDate !== todayKey;
+};
+
+/**
+ * Record that affirmation modal was shown today for the given routine
+ */
+export const recordAffirmationShownToday = async (
+  routineType: 'AM' | 'PM',
+  todayKey: string = getTodayKey()
+): Promise<void> => {
+  const data = await getMilestonesData();
+  const routineKey = routineType === 'AM' ? 'morning' : 'evening';
+  const updatedData: UserMilestonesData = {
+    ...data,
+    lastAffirmationDate: {
+      ...data.lastAffirmationDate,
+      [routineKey]: todayKey,
+    },
+  };
+  await saveMilestonesData(updatedData);
 };
 
 /**
@@ -255,9 +290,13 @@ export const recordRoutineCompletion = async (
   newlyUnlocked: MilestoneDefinition[];
   currentStreak: number;
   longestStreak: number;
+  shouldShowAffirmation: boolean;
 }> => {
   const data = await getMilestonesData();
   const today = getTodayKey();
+  const routineKey = routineType === 'AM' ? 'morning' : 'evening';
+  const alreadyShownToday = data.lastAffirmationDate?.[routineKey] === today;
+
   const dateSet = new Set(data.completedDates);
   dateSet.add(today);
 
@@ -268,13 +307,16 @@ export const recordRoutineCompletion = async (
   const updatedUnlocked = { ...data.unlockedMilestones };
   const nowIso = new Date().toISOString();
 
+  // Strict one-time unlock check:
+  // If the milestone already exists in data.unlockedMilestones or updatedUnlocked, never unlock or notify again
   const tryUnlock = (id: MilestoneId) => {
-    if (!updatedUnlocked[id]) {
-      updatedUnlocked[id] = nowIso;
-      const def = MILESTONE_DEFINITIONS.find(m => m.id === id);
-      if (def) {
-        newlyUnlocked.push(def);
-      }
+    if (data.unlockedMilestones?.[id] || updatedUnlocked[id]) {
+      return;
+    }
+    updatedUnlocked[id] = nowIso;
+    const def = MILESTONE_DEFINITIONS.find(m => m.id === id);
+    if (def) {
+      newlyUnlocked.push(def);
     }
   };
 
@@ -305,6 +347,10 @@ export const recordRoutineCompletion = async (
     longestStreak: Math.max(longestStreak, data.longestStreak),
     unlockedMilestones: updatedUnlocked,
     lastRoutineCompletedAt: nowIso,
+    lastAffirmationDate: {
+      ...data.lastAffirmationDate,
+      [routineKey]: today,
+    },
   };
 
   await saveMilestonesData(updatedData);
@@ -313,6 +359,7 @@ export const recordRoutineCompletion = async (
     newlyUnlocked,
     currentStreak,
     longestStreak: updatedData.longestStreak,
+    shouldShowAffirmation: !alreadyShownToday,
   };
 };
 
@@ -321,7 +368,7 @@ export const recordRoutineCompletion = async (
  */
 export const recordMaskStepCompletion = async (): Promise<MilestoneDefinition[]> => {
   const data = await getMilestonesData();
-  if (data.unlockedMilestones['mask_ritual']) return [];
+  if (data.unlockedMilestones && data.unlockedMilestones['mask_ritual']) return [];
 
   const nowIso = new Date().toISOString();
   const updatedUnlocked = { ...data.unlockedMilestones, mask_ritual: nowIso };
@@ -343,7 +390,7 @@ export const checkCabinetMilestones = async (
   if (productCount < 5) return [];
 
   const data = await getMilestonesData();
-  if (data.unlockedMilestones['cabinet_5']) return [];
+  if (data.unlockedMilestones && data.unlockedMilestones['cabinet_5']) return [];
 
   const nowIso = new Date().toISOString();
   const updatedUnlocked = { ...data.unlockedMilestones, cabinet_5: nowIso };
