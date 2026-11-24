@@ -338,7 +338,10 @@ export default function RoutineScreen() {
         <View
           style={[
             styles.segmentedControl,
-            { backgroundColor: isDark ? '#23211F' : '#EFECE6' },
+            {
+              backgroundColor: isDark ? '#121211' : '#EFECE6',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+            },
           ]}
         >
           <TouchableOpacity
@@ -346,26 +349,36 @@ export default function RoutineScreen() {
               styles.segmentButton,
               activeRoutine === 'AM' && [
                 styles.segmentButtonActive,
-                { backgroundColor: colors.card },
+                {
+                  backgroundColor: isDark ? '#2E2320' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(217, 130, 107, 0.45)' : '#E8E1D8',
+                },
               ],
             ]}
             onPress={() => setActiveRoutine('AM')}
             activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeRoutine === 'AM' }}
           >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    activeRoutine === 'AM'
-                      ? colors.textPrimary
-                      : colors.textSecondary,
-                  fontWeight: activeRoutine === 'AM' ? '700' : '600',
-                },
-              ]}
-            >
-              ☀️ {t('morningRoutine')}
-            </Text>
+            <View style={styles.segmentContentRow}>
+              <Text style={[styles.segmentEmoji, { opacity: activeRoutine === 'AM' ? 1 : 0.55 }]}>
+                ☀️
+              </Text>
+              <Text
+                style={[
+                  styles.segmentText,
+                  {
+                    color:
+                      activeRoutine === 'AM'
+                        ? isDark ? '#FFF7F4' : colors.textPrimary
+                        : isDark ? '#8E8E93' : colors.textSecondary,
+                    fontWeight: activeRoutine === 'AM' ? '700' : '600',
+                  },
+                ]}
+              >
+                {t('morningRoutine')}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -373,26 +386,36 @@ export default function RoutineScreen() {
               styles.segmentButton,
               activeRoutine === 'PM' && [
                 styles.segmentButtonActive,
-                { backgroundColor: colors.card },
+                {
+                  backgroundColor: isDark ? '#1E2823' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(134, 168, 146, 0.45)' : '#E8E1D8',
+                },
               ],
             ]}
             onPress={() => setActiveRoutine('PM')}
             activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeRoutine === 'PM' }}
           >
-            <Text
-              style={[
-                styles.segmentText,
-                {
-                  color:
-                    activeRoutine === 'PM'
-                      ? colors.textPrimary
-                      : colors.textSecondary,
-                  fontWeight: activeRoutine === 'PM' ? '700' : '600',
-                },
-              ]}
-            >
-              🌙 {t('eveningRoutine')}
-            </Text>
+            <View style={styles.segmentContentRow}>
+              <Text style={[styles.segmentEmoji, { opacity: activeRoutine === 'PM' ? 1 : 0.55 }]}>
+                🌙
+              </Text>
+              <Text
+                style={[
+                  styles.segmentText,
+                  {
+                    color:
+                      activeRoutine === 'PM'
+                        ? isDark ? '#F4F8F5' : colors.textPrimary
+                        : isDark ? '#8E8E93' : colors.textSecondary,
+                    fontWeight: activeRoutine === 'PM' ? '700' : '600',
+                  },
+                ]}
+              >
+                {t('eveningRoutine')}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -895,19 +918,32 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     padding: 3,
     marginBottom: SPACING.md,
+    borderWidth: 1,
   },
   segmentButton: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   segmentButtonActive: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 2,
     elevation: 2,
+  },
+  segmentContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  segmentEmoji: {
+    fontSize: 14,
   },
   segmentText: {
     fontSize: 13,
