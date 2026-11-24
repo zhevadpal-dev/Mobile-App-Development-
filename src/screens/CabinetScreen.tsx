@@ -653,29 +653,8 @@ export default function CabinetScreen() {
                     },
                   ]}
                 >
-                  {/* Subtle Elegant Opened Date Badge in Corner */}
+                  {/* Left: Order Weight Circle / Captured Product Thumbnail */}
                   <View
-                    style={[
-                      styles.openedDateBadge,
-                      {
-                        backgroundColor: isDark ? '#2A2622' : '#F6F3EE',
-                        borderColor: isDark ? '#3D3730' : '#EAE4DC',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.openedDateText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {t('openedOn')} {formatOpenedDate(product.openedDate, t)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.cardMainRow}>
-                    {/* Order Weight Circle / Captured Product Thumbnail */}
-                    <View
                       style={[
                         styles.orderCircle,
                         {
@@ -780,9 +759,19 @@ export default function CabinetScreen() {
                           {product.brand}
                         </Text>
                       ) : null}
+
+                      {/* Subtle Opened Date */}
+                      <Text
+                        style={[
+                          styles.openedDateText,
+                          { color: colors.textMuted },
+                        ]}
+                      >
+                        {t('openedOn')} {formatOpenedDate(product.openedDate, t)}
+                      </Text>
                     </View>
 
-                    {/* Card Actions: Subtle Edit & Delete */}
+                    {/* Right: Dedicated vertical column for Edit & Delete */}
                     <View style={styles.cardActionsCol}>
                       <TouchableOpacity
                         style={styles.actionIconButton}
@@ -810,7 +799,6 @@ export default function CabinetScreen() {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
                 </View>
               );
             })}
@@ -1726,29 +1714,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   productCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     borderWidth: 1,
-    position: 'relative',
-  },
-  openedDateBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 12,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: RADIUS.full,
-    zIndex: 2,
   },
   openedDateText: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  cardMainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontSize: 11,
+    marginTop: 4,
+    letterSpacing: 0.1,
   },
   orderCircle: {
     width: 44,
@@ -1768,11 +1743,14 @@ const styles = StyleSheet.create({
   },
   productDetails: {
     flex: 1,
-    paddingRight: 28,
+    paddingRight: 8,
   },
   categoryPillRow: {
     flexDirection: 'row',
-    marginBottom: 3,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
   },
   categoryTag: {
     paddingHorizontal: 7,
