@@ -370,11 +370,8 @@ export default function RoutineScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Steps Header with Quick "+ Add Step" action */}
+        {/* Quick "+ Add Step" action */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
-            {t('stepsInOrder')} {steps.length > 0 ? `(${steps.length})` : ''}
-          </Text>
           <TouchableOpacity
             style={[
               styles.addStepHeaderButton,
@@ -885,13 +882,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: SPACING.sm,
-  },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: '700',
   },
   addStepHeaderButton: {
     flexDirection: 'row',
