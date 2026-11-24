@@ -476,6 +476,8 @@ export default function CabinetScreen() {
           onPress: async () => {
             try {
               await deleteProduct(id);
+              setIsEditModalVisible(false);
+              setEditingProduct(null);
               await loadProducts();
             } catch (error) {
               console.error('Delete error:', error);
@@ -671,22 +673,7 @@ export default function CabinetScreen() {
                           style={styles.productThumbnail}
                         />
                       ) : (
-                        <>
-                          <Text
-                            style={[
-                              styles.orderNumber,
-                              {
-                                color:
-                                  orderWeight === 1
-                                    ? colors.secondary
-                                    : colors.primary,
-                              },
-                            ]}
-                          >
-                            #{orderWeight}
-                          </Text>
-                          <Text style={styles.orderIcon}>{meta.icon}</Text>
-                        </>
+                        <Text style={styles.orderIcon}>{meta.icon}</Text>
                       )}
                     </View>
 
@@ -771,34 +758,20 @@ export default function CabinetScreen() {
                       </Text>
                     </View>
 
-                    {/* Right: Dedicated vertical column for Edit & Delete */}
-                    <View style={styles.cardActionsCol}>
-                      <TouchableOpacity
-                        style={styles.actionIconButton}
-                        onPress={() => handleOpenEditModal(product)}
-                        activeOpacity={0.6}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        accessibilityLabel={`Edit ${product.name}`}
-                      >
-                        <Ionicons
-                          name="pencil-outline"
-                          size={15}
-                          color={colors.textMuted}
-                        />
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.actionIconButton}
-                        onPress={() => handleDeleteProduct(product.id, product.name)}
-                        activeOpacity={0.6}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        accessibilityLabel={`Remove ${product.name}`}
-                      >
-                        <Text style={[styles.deleteIconText, { color: colors.textMuted }]}>
-                          ✕
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    {/* Right: Single Edit (pencil) icon vertically centered */}
+                    <TouchableOpacity
+                      style={styles.actionIconButton}
+                      onPress={() => handleOpenEditModal(product)}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      accessibilityLabel={`Edit ${product.name}`}
+                    >
+                      <Ionicons
+                        name="pencil-outline"
+                        size={16}
+                        color={colors.textMuted}
+                      />
+                    </TouchableOpacity>
                 </View>
               );
             })}
@@ -1550,6 +1523,36 @@ export default function CabinetScreen() {
                   )}
                 </TouchableOpacity>
               </View>
+
+              {/* Clean Muted Destructive Delete Product Button */}
+              {editingProduct ? (
+                <TouchableOpacity
+                  style={[
+                    styles.modalDeleteButton,
+                    {
+                      backgroundColor: isDark ? '#2D1B1B' : '#FDF3F2',
+                      borderColor: isDark ? '#4D2929' : '#F7D6D4',
+                    },
+                  ]}
+                  onPress={() => handleDeleteProduct(editingProduct.id, editingProduct.name)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={15}
+                    color={isDark ? '#E57373' : '#C53030'}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.modalDeleteText,
+                      { color: isDark ? '#E57373' : '#C53030' },
+                    ]}
+                  >
+                    {t('deleteProduct')}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -1733,13 +1736,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 14,
   },
-  orderNumber: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
   orderIcon: {
-    fontSize: 12,
-    marginTop: -2,
+    fontSize: 20,
+    textAlign: 'center',
   },
   productDetails: {
     flex: 1,
@@ -1775,22 +1774,27 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
   },
-  cardActionsCol: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
   actionIconButton: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
   },
-  deleteIconText: {
-    fontSize: 14,
+  modalDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  modalDeleteText: {
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   /* AI Vision Scanner Overlay */
   aiOverlay: {
