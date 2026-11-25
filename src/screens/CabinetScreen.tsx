@@ -38,6 +38,7 @@ import {
 } from '../services/productStorage';
 import { checkCabinetMilestones } from '../services/milestoneService';
 import { MilestoneDefinition } from '../types/milestone';
+import { analyzeProductWithGemini } from '../services/geminiVision';
 
 /**
  * Mask Type definition with smart auto-filled recommended defaults
@@ -380,15 +381,18 @@ export default function CabinetScreen() {
         {
           options: [
             t('scanWithAi'),
+            t('chooseGallery'),
             t('addManually'),
             t('cancel'),
           ],
-          cancelButtonIndex: 2,
+          cancelButtonIndex: 3,
         },
         buttonIndex => {
           if (buttonIndex === 0) {
-            handleScanProduct();
+            handleScanProduct(false);
           } else if (buttonIndex === 1) {
+            handleScanProduct(true);
+          } else if (buttonIndex === 2) {
             handleOpenManualModal();
           }
         }
@@ -480,16 +484,19 @@ export default function CabinetScreen() {
 
   /**
    * AI Vision Analysis transition:
-   * Displays smooth scanner overlay, calls modular vision analyzer,
-   * then opens the product confirmation & entry modal with the captured photo.
-   * Does NOT auto-save mock data into the cabinet.
+   * Displays smooth scanner overlay, calls real Gemini Vision API,
+   * then opens the product confirmation & entry modal with the captured photo and detected metadata.
    */
-  const runAiAnalysis = async (imageUri: string) => {
+  const runAiAnalysis = async (imageUri: string, base64?: string | null) => {
     setScannedImageUri(imageUri);
     setIsAiScanning(true);
 
     try {
-      const detected = await analyzeProductImageWithVision(imageUri);
+      if (!base64) {
+        throw new Error('Base64 image payload is missing.');
+      }
+
+      const detected = await analyzeProductWithGemini(base64);
 
       // Populate entry/confirmation modal with captured photo and detected metadata
       setManualImageUri(imageUri);
@@ -498,14 +505,34 @@ export default function CabinetScreen() {
       setManualCategory(detected.category || 'serum');
       setManualRoutine(detected.routineType || 'both');
 
+      // If category is a mask, apply smart auto-filled mask defaults
+      if (isMaskCategory(detected.category)) {
+        const maskType = detected.maskType || 'full_face';
+        setManualMaskType(maskType);
+        const meta = MASK_TYPES.find(m => m.key === maskType);
+        if (meta) {
+          setManualFrequency(meta.defaultFreq);
+          setManualWeekendsOnly(meta.defaultWeekends);
+          if (!detected.routineType || detected.routineType === 'both') {
+            setManualRoutine(meta.defaultRoutine);
+          }
+        }
+      }
+
       // Dismiss scanning overlay and present confirmation modal
       setIsAiScanning(false);
       setScannedImageUri(null);
       setIsManualModalVisible(true);
     } catch (error) {
-      console.error('Error during AI analysis:', error);
+      console.warn('AI Vision analysis failed, falling back to manual entry:', error);
       setIsAiScanning(false);
       setScannedImageUri(null);
+
+      // Gracefully show subtle alert and still open modal so app never crashes
+      Alert.alert(
+        t('scanAnalysisFailedTitle'),
+        t('scanAnalysisFailedMessage')
+      );
 
       // Graceful fallback: open entry modal with photo so user does not lose captured image
       setManualImageUri(imageUri);
@@ -513,27 +540,50 @@ export default function CabinetScreen() {
       setManualBrand('');
       setManualCategory('serum');
       setManualRoutine('both');
+      setManualMaskType('full_face');
+      setManualFrequency('every_2_weeks');
+      setManualWeekendsOnly(true);
       setIsManualModalVisible(true);
     }
   };
 
   /**
-   * Launch Camera for AI Product Scan (with library fallback for simulator or permissions)
+   * Launch Camera or Gallery for AI Product Scan with base64 and quality: 0.6
    */
-  const handleScanProduct = async () => {
+  const handleScanProduct = async (fromGallery: boolean = false) => {
     try {
+      if (fromGallery) {
+        const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libStatus.status === 'granted') {
+          const libResult = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.6,
+            base64: true,
+          });
+          if (!libResult.canceled && libResult.assets?.[0]?.uri) {
+            runAiAnalysis(libResult.assets[0].uri, libResult.assets[0].base64);
+          }
+        } else {
+          Alert.alert(t('photoPermissionNeeded'), t('photoPermissionMessage'));
+        }
+        return;
+      }
+
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (libStatus.status === 'granted') {
           const libResult = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.85,
+            quality: 0.6,
+            base64: true,
           });
           if (!libResult.canceled && libResult.assets?.[0]?.uri) {
-            runAiAnalysis(libResult.assets[0].uri);
+            runAiAnalysis(libResult.assets[0].uri, libResult.assets[0].base64);
           }
         } else {
           Alert.alert(t('cameraPermissionNeeded'), t('cameraPermissionMessage'));
@@ -542,26 +592,28 @@ export default function CabinetScreen() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.85,
+        quality: 0.6,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        runAiAnalysis(result.assets[0].uri);
+        runAiAnalysis(result.assets[0].uri, result.assets[0].base64);
       }
     } catch (error) {
       console.warn('Camera error, trying gallery fallback:', error);
       try {
         const libResult = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
-          quality: 0.85,
+          quality: 0.6,
+          base64: true,
         });
         if (!libResult.canceled && libResult.assets?.[0]?.uri) {
-          runAiAnalysis(libResult.assets[0].uri);
+          runAiAnalysis(libResult.assets[0].uri, libResult.assets[0].base64);
         }
       } catch (e) {
         console.error('Gallery fallback error:', e);
@@ -1098,7 +1150,7 @@ export default function CabinetScreen() {
               ]}
               onPress={() => {
                 setIsActionMenuVisible(false);
-                handleScanProduct();
+                handleScanProduct(false);
               }}
               activeOpacity={0.75}
             >
@@ -1113,6 +1165,35 @@ export default function CabinetScreen() {
               <View style={styles.sheetActionTextCol}>
                 <Text style={[styles.sheetActionTitle, { color: colors.textPrimary }]}>
                   {t('scanWithAi')}
+                </Text>
+                <Text style={[styles.sheetActionSub, { color: colors.textSecondary }]}>
+                  {t('aiAnalyzingSub')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.sheetActionOption,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={() => {
+                setIsActionMenuVisible(false);
+                handleScanProduct(true);
+              }}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.sheetActionIconCircle,
+                  { backgroundColor: isDark ? '#2E2822' : '#F5EFE8' },
+                ]}
+              >
+                <Ionicons name="images" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.sheetActionTextCol}>
+                <Text style={[styles.sheetActionTitle, { color: colors.textPrimary }]}>
+                  {t('chooseGallery')}
                 </Text>
                 <Text style={[styles.sheetActionSub, { color: colors.textSecondary }]}>
                   {t('aiAnalyzingSub')}

@@ -179,6 +179,8 @@ export const TRANSLATIONS = {
     couldNotSaveProduct: 'Could not save the product. Please try again.',
     failedToDeleteProduct: 'Failed to delete product.',
     unableToLoadProducts: 'Unable to load products from storage.',
+    scanAnalysisFailedTitle: 'Product Recognition',
+    scanAnalysisFailedMessage: 'Could not automatically recognize the product. You can review and enter details manually.',
 
     // Categories
     catAll: 'All',
@@ -542,6 +544,8 @@ export const TRANSLATIONS = {
     couldNotSaveProduct: 'Ürün kaydedilemedi. Lütfen tekrar deneyin.',
     failedToDeleteProduct: 'Ürün silinemedi.',
     unableToLoadProducts: 'Ürünler depolamadan yüklenemedi.',
+    scanAnalysisFailedTitle: 'Ürün Tanıma',
+    scanAnalysisFailedMessage: 'Ürün otomatik olarak tanınamadı. Bilgileri manuel olarak tamamlayabilirsiniz.',
 
     // Categories
     catAll: 'Tümü',
